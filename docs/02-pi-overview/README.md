@@ -121,7 +121,7 @@ Pi 采用渐进式披露策略：
 | 多 Provider | ✅ 20+ | Anthropic | 多 | 多 |
 | 会话分支 | ✅ | ❌ | ❌ | ❌ |
 | SDK 集成 | ✅ | ❌ | ❌ | ❌ |
-| 桌面端 | 设计中 | ✅ | ❌ | ❌ |
+| 桌面端 | 本课程仅有集成案例，非官方产品 | ✅ | ❌ | ❌ |
 | MCP 支持 | 可扩展 | 内置 | 内置 | 内置 |
 
 ---
@@ -146,8 +146,7 @@ pi/
 │   ├── ai/              # 统一 LLM API 层
 │   ├── agent/           # 智能体运行时核心
 │   ├── coding-agent/    # 交互式编码智能体 CLI
-│   ├── tui/             # 终端 UI 库
-│   └── web-ui/          # Web UI 组件
+│   └── tui/             # 终端 UI 库
 ├── scripts/             # 构建与工具脚本
 └── package.json         # npm workspaces 配置
 ```
