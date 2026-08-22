@@ -19,6 +19,7 @@ from .labs.context_files import (
 )
 from .labs.compaction import COMPACTION_FIXTURE, compact
 from .labs.extension_events import LessonEventBus
+from .labs.mini_agent import demo_trace
 from .labs.provider_registry import ProviderRegistry
 from .labs.reliability import retry
 from .labs.resources import UnknownLessonResource, load_resource, scan_lesson_resources
@@ -138,6 +139,23 @@ def _run_compaction_lab() -> int:
                     "roles": list(plan.summary.roles),
                     "text_preview": list(plan.summary.text_preview),
                 },
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def _run_mini_agent_lab() -> int:
+    """Print the deterministic event flow of the Tau-inspired minimal loop."""
+    event_types, final_texts, loaded_roles = demo_trace()
+    print(
+        json.dumps(
+            {
+                "event_types": list(event_types),
+                "final_texts": list(final_texts),
+                "loaded_roles": list(loaded_roles),
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -273,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             "session-tree",
             "compaction",
             "resources",
+            "mini-agent",
             "events",
             "providers",
             "reliability",
@@ -327,6 +346,19 @@ def main(argv: list[str] | None = None) -> int:
             print("resources: --name is required", file=sys.stderr)
             return 2
         return _run_resources_lab(arguments.directory, arguments.resource_name)
+    elif arguments.command == "lab" and arguments.name == "mini-agent":
+        if (
+            arguments.directory is not None
+            or arguments.boundary is not None
+            or arguments.leaf is not None
+            or arguments.resource_name is not None
+        ):
+            print(
+                "mini-agent: positional directory, --boundary, --leaf, and --name are not supported",
+                file=sys.stderr,
+            )
+            return 2
+        return _run_mini_agent_lab()
     elif arguments.command == "lab" and arguments.name == "events":
         if (
             arguments.directory is not None

@@ -8,8 +8,8 @@ import re
 
 
 BASELINE_MARKER = (
-    "<!-- pi-baseline: version=0.75.3 "
-    "commit=144b93861f339ce353531f6873d377a1e4b2f5c4 -->"
+    "<!-- pi-baseline: version=0.84.2 "
+    "commit=914cf1472e715297caa30db4b9535d534a9eb718 -->"
 )
 CHAPTER_HEADINGS = (
     "## 学习目标",

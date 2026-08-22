@@ -143,15 +143,21 @@ Pi 采用渐进式披露策略：
 ```
 pi/
 ├── packages/
-│   ├── ai/              # 统一 LLM API 层
-│   ├── agent/           # 智能体运行时核心
+│   ├── ai/              # 统一 LLM API 层（pi-ai）
+│   ├── agent/           # 智能体运行时核心（pi-agent-core）
 │   ├── coding-agent/    # 交互式编码智能体 CLI
-│   └── tui/             # 终端 UI 库
+│   ├── tui/             # 终端 UI 库
+│   ├── client/          # 实验性：客户端
+│   ├── protocol/        # 实验性：CBOR 二进制协议
+│   ├── server/          # 实验性：PiServer 会话服务
+│   ├── evals/           # 实验性：评测
+│   ├── telemetry/       # 遥测契约
+│   └── session-backends/# 会话存储后端
 ├── scripts/             # 构建与工具脚本
 └── package.json         # npm workspaces 配置
 ```
 
-包依赖关系：**ai ← agent ← coding-agent**
+核心包依赖关系：**ai ← agent ← coding-agent**（tui 被 coding-agent 使用；client、protocol、server 等实验性包 API 可能变化）。
 
 ---
 

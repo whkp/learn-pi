@@ -6,7 +6,7 @@
 
 Pi 的模型配置位于 models.json；其中 providers 是以 Provider 标识为键的对象映射，不是列表。Provider API 名称包含 openai-completions。认证来源、优先级和可用模型以固定基线的 models、settings 和 custom-provider 文档为准。
 
-自定义 Provider 的适配逻辑使用 streamSimple。模型显示名、上下文窗口和 API 类型是不同维度，不能仅按模型字符串推断权限或费用。
+自定义 Provider 的当前适配入口是 `pi.registerProvider()`，配 pi-ai 的 `createProvider` 与 `api`（如 `openAICompletionsApi()`）；`streamSimple` 已移到 `@earendil-works/pi-ai/compat`，属于兼容导出。模型显示名、上下文窗口和 API 类型是不同维度，不能仅按模型字符串推断权限或费用。
 
 ## Python 对照实验
 

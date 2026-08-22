@@ -4,7 +4,7 @@
 
 ## ai 与 Provider
 
-ai 包提供统一消息与 Provider 适配层。自定义 Provider 的流式实现应使用当前的 streamSimple 接口；Provider 名称和模型数据由 coding-agent 的模型配置消费。具体字段请从固定基线的 models 与 custom-provider 文档、类型定义交叉核对。
+ai 包提供统一消息与 Provider 适配层。自定义 Provider 的当前入口是 `pi.registerProvider()`，配 pi-ai 的 `createProvider` 与 `api`（如 `openAICompletionsApi()`）；`streamSimple` 已移到 `@earendil-works/pi-ai/compat`，属于兼容导出。Provider 名称和模型数据由 coding-agent 的模型配置消费。具体字段请从固定基线的 models 与 custom-provider 文档、类型定义交叉核对。
 
 ## agent 运行时
 

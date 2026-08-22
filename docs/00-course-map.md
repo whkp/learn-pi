@@ -47,8 +47,9 @@ python3 scripts/check_markdown_links.py
 
 ## 配套资料
 
-- [Pi 源码映射](pi-source-map.md)
+- [Pi 源码映射](pi-source-map.md)（固定基线：0.84.2 @ 914cf147）
 - [术语表](glossary.md)
+- Tau：Pi 的 Python 对照实现（tau_agent / tau_ai / tau_coding），与本章的 Python 教学模型对照阅读
 - [20 安全与权限边界](20-safety/README.md)
 - [21 可靠性、取消与错误边界](21-reliability/README.md)
 - [22 组合、资源与 MCP 边界](22-composition-and-mcp/README.md)
