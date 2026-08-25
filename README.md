@@ -1,10 +1,14 @@
 # Learn Pi
 
+[![在线阅读](https://img.shields.io/badge/在线阅读-whkp.github.io/learn--pi-blue)](https://whkp.github.io/learn-pi/)
+
 **面向开发者的 Pi 编码智能体学习仓库：准确资料、可运行的 Python 实验、自动化测试与离线实战项目。**
 
-先立一个判断：**模型负责推理，Harness 负责给它双手、眼睛和工作台。**
+先立一个判断：**智能来自模型，能力边界全来自 harness（包住模型的那层程序）。**
 
-智能体产品 = 模型 + Harness。模型决定何时思考、何时调用工具、何时停下；Harness 决定模型能不能真正读文件、改代码、跑命令、记住会话。本课程研究的正是 Harness 这一侧——以 Pi 为蓝本，用离线、可运行、可测试的 Python 教学模型把关键机制讲清楚。
+一个统一定义：**agent = LLM + tool use**。模型负责语言、推理，以及决定下一步调用哪个工具；除此之外的一切——消息维护、工具注册与执行、权限、上下文、会话——都是 harness 的职责。因此，Pi 核心不内置子代理、计划模式、MCP 等高级能力：它们本质上都是一个工具，可以按需扩展，而不是塞进核心。
+
+本课程研究的正是 harness 这一侧——以 Pi 为蓝本，每一章围绕一个大主题，讲清“是什么 / 怎么做 / 为什么”，并给出 **Pi 源码（TypeScript）讲解 + Python 教学模型** 的双重对照。
 
 ```
                     THE AGENT PATTERN
@@ -27,16 +31,17 @@
 
 ## 这个仓库真正教什么
 
-一句话：**能跑的 Agent 不止是"调模型的循环"，而是循环周围一整套可验证的工程边界。**
+一句话：**能跑的 Agent 不止是“调模型的循环”，而是循环周围一整套可验证的工程边界。**
 
-- **Agent 循环**：消息进、事件出——谁在驱动循环，谁在消费事件
-- **工具系统**：类型化工具、注入式执行器、执行前检查（意图 → 路径 → 执行）
-- **会话与分支**：JSONL 逐帧、会话树、压缩切割边界
-- **上下文与资源**：规则文件发现、资源扫描、技能/模板的目录规则
-- **可靠性**：有限重试、错误隔离、可观测结果
-- **协议边界**：JSONL RPC 的粘包/半包/校验
+- **Agent 循环**：声明工具 → 模型请求调用 → 执行 → 结果回填 → 再问模型（[02 章](docs/02-agent-loop/README.md)）
+- **工具系统**：工具层 + 注册表层 + 权限层；软约束（提示词）与硬闸门（权限）分工（[03 章](docs/03-tools/README.md)）
+- **消息与记忆**：消息数组由 harness 维护，不是模型记住的；跨会话记忆的价值在筛选（[04 章](docs/04-messages-and-memory/README.md)）
+- **会话管理**：JSONL v3、会话树、append-only 与分支（[05 章](docs/05-sessions/README.md)）
+- **事件驱动**：事件契约、subscribe 与 pi.on 的分水岭；高级能力即工具（[06 章](docs/06-events-and-extensions/README.md)）
+- **上下文压缩**：窗口即预算；压缩不是丢消息，是让模型总结它自己（[07 章](docs/07-context-and-compaction/README.md)）
+- **可靠性**：错误分类、指数退避、错误隔离（[09 章](docs/09-reliability/README.md)）
 
-每章都有可运行的 Python 实验和自动化测试。**先读结论，再跑代码，最后自己改一版。**
+每章都有 Pi 源码（0.84.2）代码讲解、可运行的 Python 实验和自动化测试。**先读结论，再跑代码，最后自己改一版。**
 
 ## 这个仓库刻意不教什么
 
@@ -60,7 +65,7 @@
 不要随机打开章节。安全路径：
 
 1. 读 [00 课程地图](docs/00-course-map.md) 了解课程结构与主章节。
-2. 读 [01 什么是 AI Coding Agent](docs/01-what-is-coding-agent/README.md) → [02 Pi 概览](docs/02-pi-overview/README.md) → [03 架构深入解析](docs/03-architecture-deep-dive/README.md)。
+2. 读 [01 架构总览](docs/01-architecture/README.md) → [02 Agent Loop](docs/02-agent-loop/README.md) → [03 工具系统](docs/03-tools/README.md)。
 3. 跑第一个实验，确认最小循环真的能跑：
 
 ```sh
@@ -69,46 +74,31 @@ python3 -m learn_pi_lab lab agent-loop
 python3 -m learn_pi_lab lab mini-agent
 ```
 
-4. 按下面五个阶段推进，每阶段结束前，先自己重写一遍最小版本再继续。
+4. 按下面三阶段推进，每阶段结束前，先自己重写一遍最小版本再继续。
 
-## 学习路径（五个阶段）
+## 学习路径（三个阶段）
 
-| 阶段 | 阅读重点 | 动手产物 |
+| 阶段 | 章节 | 动手产物 |
 | --- | --- | --- |
-| **一、基础** | [01 Agent](docs/01-what-is-coding-agent/README.md)、[02 Pi 概览](docs/02-pi-overview/README.md)、[03 架构](docs/03-architecture-deep-dive/README.md) | agent-loop、mini-agent Python 实验 |
-| **二、运行机制** | [04 核心模块](docs/04-core-modules/README.md)、[05 扩展](docs/05-extension-system/README.md)、[08 会话](docs/08-session-management/README.md) | 工具策略、会话树、事件总线 |
-| **三、配置与集成** | [09 模型](docs/09-providers-and-models/README.md)、[11 扩展开发](docs/11-extensions-development/README.md)、[16 压缩](docs/16-compaction/README.md)、[17 SDK/RPC](docs/17-sdk-and-rpc/README.md) | Provider 注册表、重试、JSONL 编解码 |
-| **四、工程实践** | [19 实战项目](docs/19-real-projects/README.md)、[20 安全](docs/20-safety/README.md)、[21 可靠性](docs/21-reliability/README.md)、[22 组合](docs/22-composition-and-mcp/README.md)、[23 评测](docs/23-testing-and-evaluation/README.md) | 四个离线 mini-project |
-
-主章节（20-23）由课程契约检查器强制校验；01-19 是参考路线，帮助你按需深入具体主题。
+| **一、架构与核心机制** | [01 架构总览](docs/01-architecture/README.md)、[02 Agent Loop](docs/02-agent-loop/README.md)、[03 工具系统](docs/03-tools/README.md)、[04 消息与记忆](docs/04-messages-and-memory/README.md) | agent-loop、mini-agent、权限实验 |
+| **二、状态与边界** | [05 会话管理](docs/05-sessions/README.md)、[06 事件与扩展](docs/06-events-and-extensions/README.md)、[07 上下文压缩](docs/07-context-and-compaction/README.md) | 会话树、事件总线、压缩实验 |
+| **三、集成与实践** | [08 Provider](docs/08-providers-and-models/README.md)、[09 可靠性](docs/09-reliability/README.md)、[10 协议与集成](docs/10-protocol-and-integration/README.md)、[11 实战与评测](docs/11-projects-and-evaluation/README.md) | Provider 目录、重试、JSONL、四个 mini-project |
 
 ## 课程地图
 
-| 章节 | 主题 | 一句话 |
+| 章节 | 大主题 | 一句话 |
 | --- | --- | --- |
-| [01](docs/01-what-is-coding-agent/README.md) | 什么是 AI Coding Agent | 从代码补全到自主 Agent 的概念跃迁 |
-| [02](docs/02-pi-overview/README.md) | Pi 项目概览 | 定位、核心特性、设计哲学 |
-| [03](docs/03-architecture-deep-dive/README.md) | 架构深入解析 | 包边界、数据流、Tau 对照实验 |
-| [04](docs/04-core-modules/README.md) | 核心模块源码解读 | ai / agent / coding-agent 职责 |
-| [05](docs/05-extension-system/README.md) | 扩展系统与工具链 | 事件名、改写边界、社区扩展参考 |
-| [06](docs/06-install-and-quickstart/README.md) | 安装与快速上手 | Node 22.19+、npm / curl 安装 |
-| [07](docs/07-interactive-mode/README.md) | 交互模式详解 | 编辑器、斜杠命令、快捷键 |
-| [08](docs/08-session-management/README.md) | 会话管理 | JSONL v3、/tree、分支 |
-| [09](docs/09-providers-and-models/README.md) | Provider 与模型配置 | models.json、registerProvider |
-| [10](docs/10-skills-system/README.md) | Skills 技能系统 | SKILL.md、渐进式加载 |
-| [11](docs/11-extensions-development/README.md) | Extensions 扩展开发 | 注册工具、命令、UI |
-| [12](docs/12-prompt-templates/README.md) | Prompt Templates | /name 模板展开 |
-| [13](docs/13-themes-and-ui/README.md) | 主题与 UI 定制 | themes/*.json |
-| [14](docs/14-common-extensions/README.md) | 常用扩展实践 | 工具、命令、快捷键案例 |
-| [15](docs/15-pi-packages/README.md) | Pi Packages 包管理 | pi install npm:/git: |
-| [16](docs/16-compaction/README.md) | 会话压缩与上下文管理 | session_before_compact 边界 |
-| [17](docs/17-sdk-and-rpc/README.md) | SDK 与 RPC 编程接口 | session.subscribe、JSONL 帧 |
-| [18](docs/18-desktop-design/README.md) | 桌面端集成案例研究 | 基于 SDK/RPC 的推测性案例 |
-| [19](docs/19-real-projects/README.md) | 实战项目 | 四个离线 mini-project |
-| [20](docs/20-safety/README.md) | 安全与权限边界 | 允许列表、路径边界 |
-| [21](docs/21-reliability/README.md) | 可靠性、取消与错误边界 | 有限重试、错误数据流 |
-| [22](docs/22-composition-and-mcp/README.md) | 组合、资源与 MCP 边界 | 资源发现、JSONL 逐帧 |
-| [23](docs/23-testing-and-evaluation/README.md) | 测试与评测 | 行为测试、契约、报告 |
+| [01](docs/01-architecture/README.md) | 架构总览 | Pi 分层与 Agent 产品通用骨架 |
+| [02](docs/02-agent-loop/README.md) | Agent Loop | 模型如何驱动循环：Trace/Turn、stopReason |
+| [03](docs/03-tools/README.md) | 工具系统 | 工具如何被声明、注册与约束 |
+| [04](docs/04-messages-and-memory/README.md) | 消息与记忆 | 对话历史如何组织与传递 |
+| [05](docs/05-sessions/README.md) | 会话管理 | 对话如何存储、恢复与分叉 |
+| [06](docs/06-events-and-extensions/README.md) | 事件驱动与扩展 | 事件契约、subscribe vs pi.on、社区扩展 |
+| [07](docs/07-context-and-compaction/README.md) | 上下文压缩 | 窗口即预算、切割点、成对不拆 |
+| [08](docs/08-providers-and-models/README.md) | Provider 与模型 | 注册表、models.json、认证分离 |
+| [09](docs/09-reliability/README.md) | 可靠性 | 错误分类、指数退避、错误隔离 |
+| [10](docs/10-protocol-and-integration/README.md) | 协议与集成 | Print/JSON/RPC、JSONL 分帧 |
+| [11](docs/11-projects-and-evaluation/README.md) | 实战与评测 | 四个 mini-project、测试与评测 |
 
 配套资料：[Pi 源码映射](docs/pi-source-map.md)（固定基线）、[术语表](docs/glossary.md)。
 
@@ -139,7 +129,7 @@ python3 -m learn_pi_lab lab mini-agent
 
 ## 阅读方法
 
-**主路线（推荐）**：按阶段顺序推进，01 → 19 → 20-23。每章先读"当前 Pi 行为"确认事实边界，再跑对应 Python 实验，最后自己改一版。
+**主路线（推荐）**：按阶段顺序推进，01 → 10。每章先读"机制"确认概念，再看"Pi 源码怎么实现"对照真实代码，跑对应 Python 实验，最后自己改一版。
 
 **先跑起来，再补齐**：跳过背景章节，直接跑 `python3 -m learn_pi_lab lab agent-loop` 和 `mini-agent`，遇到不懂的机制再回到对应章节。
 
@@ -149,17 +139,19 @@ python3 -m learn_pi_lab lab mini-agent
 
 ```text
 learn-pi/
-├── docs/                  # 23 章课程资料（中文）
+├── docs/                  # 11 章课程资料（中文）
 │   ├── 00-course-map.md   # 课程地图与主章节清单
-│   ├── 01-19/             # 参考路线章节
-│   ├── 20-23/             # 主章节（契约检查）
+│   ├── 01-architecture/   # 架构总览（Pi 分层 + 通用骨架）
+│   ├── 02-agent-loop/     # 每章一个大主题
+│   ├── ...                #   （工具/消息/会话/事件/压缩/Provider/可靠/协议/实战）
+│   ├── 11-projects-and-evaluation/
 │   ├── pi-source-map.md   # Pi 固定基线映射
 │   └── glossary.md        # 术语表
 ├── learn_pi_lab/          # Python 教学实验包（仅标准库）
 │   └── labs/              # 11 个实验模块
 ├── projects/              # 4 个离线实战项目
 ├── scripts/               # 课程契约与链接检查脚本
-└── tests/                 # 101 个单元测试
+└── tests/                 # 107 个单元测试
 ```
 
 ## 快速开始
@@ -202,10 +194,10 @@ python3 scripts/check_markdown_links.py
 
 读完本课程，你应该能清晰回答：
 
-- Pi 的 Agent 循环里事件流如何流动？谁在驱动循环，谁在消费事件？
+- Pi 的 Agent 循环里事件流如何流动？Trace 与 Turn 有什么区别？
 - 为什么工具要类型化？为什么路径要在进入执行层前先检查？
-- 会话为什么是 JSONL v3 而不是一个 JSON 数组？
-- 压缩、重试、权限、逐帧解析各自解决什么问题？
+- 会话为什么是 JSONL v3 而不是一个 JSON 数组？为什么必须"认父不认子"？
+- subscribe 与 pi.on 有什么本质区别？压缩为什么不能拆开成对的工具调用？
 - 如何用 Tau / Pi 固定基线源码交叉验证课程中的每一个说法？
 
 如果这些问题你都能答上来，并且能自己重建一个最小版本，本课程就完成了它的任务。

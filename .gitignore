@@ -22,3 +22,6 @@ package-lock.json
 # test
 tests/__pycache__/
 tests/*.pyc
+# mdBook site build artifacts
+src/
+book/
