@@ -19,9 +19,10 @@ package-lock.json
 # plan
 .superpowers/
 
-# test
-tests/__pycache__/
-tests/*.pyc
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 # mdBook site build artifacts
 src/
 book/
