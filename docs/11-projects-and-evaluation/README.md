@@ -1,6 +1,6 @@
 # 实战与评测 —— 综合应用与验证
 
-> 前面十章讲机制，这一章把它们组装起来：四个离线 mini-project 训练可迁移的 Agent 工程边界，测试与评测构成同一条质量链。
+> 前面十章讲机制，这一章把它们组装起来。四个离线 mini-project 训练可迁移的 Agent 工程边界，测试与评测构成同一条质量链：能运行不等于可维护，功能正确、工具安全、结果质量是三个不同的评测维度。
 
 ## 学习目标
 
@@ -8,7 +8,9 @@
 - 区分功能正确性、工具安全性与结果质量三种评测维度。
 - 理解确定性测试不能证明模型在开放式任务上永远正确。
 
-## Pi 的核心设计：评测是分层的
+## 一、问题：怎么知道一个 Agent 是"好的"
+
+"能运行"是最低标准。可维护的 Agent 需要回答三个不同的问题：
 
 | 维度 | 问题 | 手段 |
 |------|------|------|
@@ -16,7 +18,9 @@
 | 工具安全性 | 会不会越权/破坏 | 允许列表、路径边界、权限测试 |
 | 结果质量 | 模型产出好不好 | 固定样本集、人工复核、回归门槛 |
 
-一个"能运行"的 Agent 不等于"可维护"：行为测试、文档契约、集成项目缺一不可。四个项目各自训练一个具体的工程能力：
+确定性测试（本课程的主线）解决前两个；结果质量需要生产级评测（固定样本集、人工复核、失败分类）——**确定性单元测试不能证明模型在开放式任务上永远正确**。
+
+## 二、四个项目：每个训练一个工程能力
 
 | 项目 | 训练的机制 | 对应章节 |
 |------|-----------|---------|
@@ -25,24 +29,13 @@
 | CI Review Pipeline | 多检查收敛为稳定报告 | 本章 |
 | RPC Console | JSONL 分帧 + 方法白名单 | [10 章](../10-protocol-and-integration/README.md) |
 
-## 当前 Pi 行为
+### Session Inspector：只读解析
 
-- Pi 仓库用 `npm run check`（lint + 类型检查 + 依赖检查）与 `./test.sh`（跳过依赖 LLM 的测试）验证。
-- 迁移思路到 Pi 时：用 TypeScript 和当前 ExtensionAPI / SDK / RPC 文档重新实现，并补上认证、权限、取消、日志脱敏与端到端测试。
+[inspect_session_jsonl](../../projects/session_inspector.py) 逐行读 JSONL，用 `Counter` 统计角色、数 `type == "compaction"` 记录，返回不可变的 `SessionReport`。它刻意**不执行记录内容**——会话文件里的命令输出只是数据，不是指令。
 
-## 在 Pi 里怎么操作
+### Safe Review Runner：意图 + 路径双重闸门
 
-```sh
-python3 -m unittest discover -s tests -v          # 全部测试
-python3 scripts/check_course_contract.py          # 课程契约（基线 + 章节结构）
-python3 scripts/check_markdown_links.py           # 本地链接完整性
-```
-
-## Python 实验：四个项目的实现要点
-
-**Session Inspector**（[inspect_session_jsonl](../../projects/session_inspector.py)）逐行读 JSONL，用 `Counter` 统计角色、数 `type == "compaction"` 记录，返回不可变的 `SessionReport`。它刻意**不执行记录内容**——会话文件里的命令输出只是数据，不是指令。
-
-**Safe Review Runner**（[review_request](../../projects/safe_review_runner.py)）的检查顺序——意图白名单 → 路径边界：
+[review_request](../../projects/safe_review_runner.py) 的检查顺序——意图白名单 → 路径边界：
 
 ```python
 def review_request(policy, intent, target) -> ReviewDecision:
@@ -56,9 +49,26 @@ def review_request(policy, intent, target) -> ReviewDecision:
 
 与 [03 章](../03-tools/README.md) 的 tool_permissions 同一思路：先检查、后放行，拒绝的请求不产生任何副作用。
 
-**CI Review Pipeline**（[build_review_report](../../projects/ci_review_pipeline.py)）把三项检查收敛为有序报告，CI 可稳定解析；失败时给出可读原因，而不是崩溃堆栈。
+### CI Review Pipeline：稳定报告
 
-**RPC Console**（[handle_request](../../projects/rpc_console.py)）只响应 `ping`，返回 JSON——演示"stdout 是协议、方法白名单、错误是数据"。
+[build_review_report](../../projects/ci_review_pipeline.py) 把三项检查（课程契约、Markdown 链接、单元测试）收敛为有序报告，CI 可稳定解析；失败时给出可读原因，而不是崩溃堆栈。
+
+### RPC Console：白名单接口
+
+[handle_request](../../projects/rpc_console.py) 用课程 JSONL 编解码器解析单行请求，只响应 `ping`，返回 JSON——不创建子进程、不执行命令。演示"stdout 是协议、方法白名单、错误是数据"三个原则。
+
+## 当前 Pi 行为
+
+- Pi 仓库用 `npm run check`（lint + 类型检查 + 依赖检查）与 `./test.sh`（跳过依赖 LLM 的测试）验证。
+- 迁移思路到 Pi 时：用 TypeScript 和当前 ExtensionAPI / SDK / RPC 文档重新实现，并补上认证、权限、取消、日志脱敏与端到端测试。
+
+## 在 Pi 里怎么操作
+
+```sh
+python3 -m unittest discover -s tests -v          # 全部测试
+python3 scripts/check_course_contract.py          # 课程契约（基线 + 章节结构）
+python3 scripts/check_markdown_links.py           # 本地链接完整性
+```
 
 ## Python 实验
 
@@ -80,3 +90,12 @@ python3 scripts/check_markdown_links.py
 
 - 确定性单元测试不能证明模型在开放式任务上永远正确；生产评测还应包含固定样本集、人工复核、失败分类与回归门槛。
 - 日志策略不得泄露敏感数据；本课程四个项目不访问网络、不调用模型、不执行 shell 命令。
+- 迁移到 Pi 前，用 TypeScript 重新实现并补齐生产级边界（认证、权限、取消、脱敏、端到端测试）。
+
+## 回顾
+
+- **评测三层**：功能正确性、工具安全性、结果质量——确定性测试覆盖前两层。
+- **四个项目**：Session Inspector（只读解析）、Safe Review Runner（意图+路径闸门）、CI Review Pipeline（稳定报告）、RPC Console（白名单接口）。
+- **质量链**：行为测试 + 文档契约 + 集成项目，缺一不可。
+
+课程到此结束。回到 [课程地图](../00-course-map.md) 或 [源码映射](../pi-source-map.md)，把每一章的机制放到 Pi 的真实源码里对照验证——**这不是"逐行复制源码"，这是"掌握真正重要的设计，然后自己重建它"**。

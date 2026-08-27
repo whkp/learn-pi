@@ -1,6 +1,6 @@
 # Provider 与模型 —— 一行代码驾驭多个模型
 
-> Provider 层要回答三个问题：有哪些模型（元数据）、怎么调用（API 类型）、凭什么授权（认证）。Pi 的核心设计是**三者分离**：模型选择器只读元数据，实际调用走统一流式接口，认证由运行时按 Provider 解析——因此"不能仅按模型字符串推断权限或费用"。
+> Agent 需要同时面对多家 LLM：认证方式不同、API 格式不同、模型元数据不同。Provider 层的核心设计是**三者分离**：元数据（有哪些模型）、协议（怎么调用）、认证（凭什么授权）互相独立——因此"不能仅按模型字符串推断权限或费用"。
 
 ## 学习目标
 
@@ -8,26 +8,36 @@
 - 看懂 models.json 的结构：providers 是对象映射、api 决定协议。
 - 理解两种注册形态：完整 Provider vs 名 + 配置。
 
-## Pi 的核心设计
+## 一、问题：接一家模型是配置，接十家就是架构
 
-### 元数据、协议、认证三者分离
+只用一个模型，写死调用代码就够了。但 Agent 要面对：Claude 的订阅、OpenAI 的 API key、本机 Ollama、公司的内网网关……每一家的认证方式、请求格式、模型清单都不一样。
 
-| 维度 | 回答 | 例子 |
-|------|------|------|
+如果每接一家就改一遍调用代码，代码会迅速腐化。Provider 层的存在，就是把这堆差异**收敛成一个统一接口**。
+
+## 二、三者分离：元数据、协议、认证
+
+| 维度 | 回答的问题 | 例子 |
+|------|-----------|------|
 | 元数据 | 有哪些模型 | id、显示名、contextWindow、reasoning、cost |
 | API 类型 | 怎么调用 | openai-completions、anthropic-messages、google-generative-ai |
 | 认证 | 凭什么授权 | 订阅 OAuth、API key、环境变量 |
 
-三者分离的意义：`/model` 只读元数据；切换模型时重新检查上下文窗口与工具支持；认证来源（`/login` 的 auth.json、环境变量、`--api-key`）独立于模型选择。`contextWindow`、`reasoning`、`cost` 是相互独立的维度——显示名相近的模型，能力可能完全不同。
+三者分离的意义：
 
-### 两种注册形态
+- **`/model` 只读元数据**：模型选择器不关心认证，只列可用模型。
+- **调用走统一流式接口**：`stream_response(model, system, messages, tools)`——不管背后是哪个 Provider。
+- **认证独立解析**：`/login` 的 auth.json、环境变量、`--api-key` 是三条独立来源。
 
-扩展注册 Provider 有两种方式：
+`contextWindow`、`reasoning`、`cost` 是相互独立的维度——显示名相近的模型，能力可能完全不同。所以"模型字符串"不能用来推断权限或费用。
+
+## 三、两种注册形态
+
+扩展注册 Provider 有两种方式，按需选择：
 
 - **完整 Provider 对象**：自定义认证、过滤、刷新、流式行为——深度定制时用。
 - **provider 名 + 配置**：只覆盖 baseUrl / apiKey / api / models——对接 OpenAI 兼容服务器等常见场景。
 
-### models.json：providers 是映射不是列表
+## 四、models.json：providers 是映射不是列表
 
 用户自定义模型写在 `~/.pi/agent/models.json`，每次打开 `/model` 时重载（无需重启）：
 
@@ -46,7 +56,13 @@
 }
 ```
 
-要点：`api` 决定协议（可设在 provider 层默认、model 层覆盖）；`apiKey` 可以是占位符（本地服务器忽略 key，但 pi 仍按"需要认证"处理模型）；对不支持 `developer` role 的服务器用 `compat.supportsDeveloperRole: false` 降级。
+三个要点：
+
+1. **`providers` 是以标识为键的对象映射，不是列表**——这是课程反复强调的事实点。
+2. **`api` 决定协议**，可设在 provider 层（默认）或 model 层（覆盖）。
+3. **`apiKey` 可以是占位符**：本地服务器（Ollama）忽略 key，但 pi 仍按"需要认证"处理模型，所以占位 + `/login` 存 key，或 `--api-key` 传入。
+
+对不支持 `developer` role 的 OpenAI 兼容服务器，用 `compat.supportsDeveloperRole: false` 降级。
 
 ## 当前 Pi 行为
 
@@ -87,3 +103,11 @@ python3 -m unittest tests.test_08_provider_registry -v
 
 - 凭据从来不应写进课程示例、日志或版本库；为每个 Provider 使用最小范围凭据。
 - 模型显示名/上下文窗口/API 类型不能互相推断；本地模型（Ollama）的 key 是占位符，不代表真实认证。
+
+## 回顾
+
+- **三者分离**：元数据、协议、认证独立——模型字符串不能推断权限。
+- **models.json**：providers 是映射不是列表；api 决定协议；apiKey 可为占位符。
+- **两种注册形态**：完整 Provider vs 名 + 配置。
+
+模型调用会失败——网络抖动、限流、配额耗尽。下一章[可靠性](../09-reliability/README.md)讲失败如何重试与隔离。
