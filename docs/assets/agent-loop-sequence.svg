@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="520" viewBox="0 0 760 520" role="img" aria-label="Agent Loop 时序图：用户、Harness、模型、工具四方的消息流">
+  <style>
+    text { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .lifeline { stroke: #3b5070; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .msg { stroke: #7aa2f7; stroke-width: 1.5; }
+    .msg-return { stroke: #9bb8ff; stroke-width: 1.2; stroke-dasharray: 5 3; }
+    .label { fill: #d8dee9; font-size: 12px; }
+    .label-dim { fill: #a9b2c3; font-size: 12px; }
+    .actor { fill: #16233c; stroke: #3b5070; stroke-width: 1; }
+    .actor-name { fill: #d8dee9; font-size: 14px; font-weight: 600; }
+    .phase { fill: #7aa2f7; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+  </style>
+
+  <!-- 参与者 -->
+  <rect x="20" y="18" width="90" height="34" rx="6" class="actor"/>
+  <text x="65" y="39" text-anchor="middle" class="actor-name">用户</text>
+  <rect x="225" y="18" width="110" height="34" rx="6" class="actor"/>
+  <text x="280" y="39" text-anchor="middle" class="actor-name">Harness</text>
+  <rect x="430" y="18" width="90" height="34" rx="6" class="actor"/>
+  <text x="475" y="39" text-anchor="middle" class="actor-name">模型</text>
+  <rect x="615" y="18" width="110" height="34" rx="6" class="actor"/>
+  <text x="670" y="39" text-anchor="middle" class="actor-name">工具</text>
+
+  <!-- 生命线 -->
+  <line x1="65" y1="52" x2="65" y2="500" class="lifeline"/>
+  <line x1="280" y1="52" x2="280" y2="500" class="lifeline"/>
+  <line x1="475" y1="52" x2="475" y2="500" class="lifeline"/>
+  <line x1="670" y1="52" x2="670" y2="500" class="lifeline"/>
+
+  <!-- 阶段标注 -->
+  <text x="20" y="90" class="phase">Turn 1</text>
+
+  <!-- 1. 用户输入 -->
+  <line x1="65" y1="105" x2="275" y2="105" class="msg"/>
+  <text x="170" y="99" text-anchor="middle" class="label">prompt</text>
+
+  <!-- 2. 请求模型 -->
+  <line x1="285" y1="130" x2="470" y2="130" class="msg"/>
+  <text x="377" y="124" text-anchor="middle" class="label">messages + tools</text>
+
+  <!-- 3. 模型返回 toolUse -->
+  <line x1="475" y1="155" x2="290" y2="155" class="msg-return"/>
+  <text x="382" y="149" text-anchor="middle" class="label-dim">stopReason: toolUse</text>
+
+  <!-- 4. 执行工具 -->
+  <line x1="290" y1="180" x2="665" y2="180" class="msg"/>
+  <text x="477" y="174" text-anchor="middle" class="label">read_file(path)</text>
+
+  <!-- 5. 工具返回 -->
+  <line x1="670" y1="205" x2="295" y2="205" class="msg-return"/>
+  <text x="480" y="199" text-anchor="middle" class="label-dim">文件内容</text>
+
+  <!-- 6. 结果回填后再问 -->
+  <line x1="290" y1="230" x2="470" y2="230" class="msg"/>
+  <text x="380" y="224" text-anchor="middle" class="label">messages + toolResult</text>
+
+  <!-- 7. 模型返回 stop -->
+  <line x1="475" y1="255" x2="290" y2="255" class="msg-return"/>
+  <text x="382" y="249" text-anchor="middle" class="label-dim">stopReason: stop</text>
+
+  <!-- 8. 最终回复给用户 -->
+  <line x1="285" y1="280" x2="70" y2="280" class="msg-return"/>
+  <text x="177" y="274" text-anchor="middle" class="label-dim">最终文本</text>
+
+  <!-- 说明框 -->
+  <rect x="30" y="310" width="700" height="180" rx="10" fill="#0d1526" stroke="#22324f"/>
+  <text x="50" y="340" class="label" font-weight="700">三个关键点</text>
+  <text x="50" y="365" class="label-dim">1. 循环由模型输出驱动：stopReason=toolUse 就执行工具，=stop 就结束。</text>
+  <text x="50" y="390" class="label-dim">2. Turn = 一次模型调用 + 该调用触发的一批工具（第 2-6 步是同一个 Turn）。</text>
+  <text x="50" y="415" class="label-dim">3. 工具结果以 toolResult 回填，模型下一轮能看到"发生了什么"。</text>
+  <text x="50" y="455" class="label-dim">终止不止看 stopReason：工具批 terminate、pending/follow-up、取消信号都会参与（见正文对照表）。</text>
+  <text x="50" y="480" class="label-dim">图：Agent Loop 五步闭环时序（对应 02 章）。</text>
+</svg>

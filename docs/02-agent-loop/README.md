@@ -26,12 +26,18 @@
 声明工具 → 模型请求调用 → 你执行 → 结果回填 → 再问模型 →（回到第 2 步）
 ```
 
+![Agent Loop 时序图](../assets/agent-loop-sequence.svg)
+
+## 二、两个必须分清的概念：Trace 与 Turn
+
 ## 二、两个必须分清的概念：Trace 与 Turn
 
 - **Trace**：从 `agent_start` 到 `agent_end` 的一次完整运行，包含多个 Turn。
 - **Turn**：**一次模型调用 + 该调用触发的一批工具执行**，由一对 `turn_start` / `turn_end` 包裹。
 
 关键点：模型一口气要求 3 个工具（read + grep + find），这 3 个工具在**同一个** Turn 里执行——它们都是同一次模型调用的产物。把结果回填后再调模型，才进入下一个 Turn。
+
+![Trace 与 Turn 嵌套图](../assets/trace-turn-nesting.svg)
 
 区分两者的实际意义：
 

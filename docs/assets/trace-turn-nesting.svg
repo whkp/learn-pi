@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" viewBox="0 0 720 380" role="img" aria-label="Trace 与 Turn 嵌套结构图">
+  <style>
+    text { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .trace { fill: #0f1a2b; stroke: #7aa2f7; stroke-width: 2; }
+    .turn { fill: #16233c; stroke: #3b5070; stroke-width: 1.5; }
+    .msg { fill: #1c2c47; stroke: #3b5070; stroke-width: 1; }
+    .t-label { fill: #7aa2f7; font-size: 12px; font-weight: 700; }
+    .label { fill: #d8dee9; font-size: 11px; }
+    .dim { fill: #a9b2c3; font-size: 11px; }
+  </style>
+
+  <!-- Trace 外框 -->
+  <rect x="20" y="30" width="680" height="320" rx="12" class="trace"/>
+  <text x="40" y="58" class="t-label">Trace（agent_start → agent_end，一次完整运行）</text>
+
+  <!-- Turn 1 -->
+  <rect x="40" y="80" width="640" height="110" rx="8" class="turn"/>
+  <text x="60" y="102" class="label" font-weight="700">Turn 1：一次模型调用 + 一批工具</text>
+  <rect x="60" y="112" width="180" height="26" rx="5" class="msg"/>
+  <text x="150" y="129" text-anchor="middle" class="label">模型调用（toolUse）</text>
+  <rect x="255" y="112" width="130" height="26" rx="5" class="msg"/>
+  <text x="320" y="129" text-anchor="middle" class="label">read 执行</text>
+  <rect x="395" y="112" width="130" height="26" rx="5" class="msg"/>
+  <text x="460" y="129" text-anchor="middle" class="label">grep 执行</text>
+  <rect x="535" y="112" width="130" height="26" rx="5" class="msg"/>
+  <text x="600" y="129" text-anchor="middle" class="label">find 执行</text>
+  <text x="60" y="170" class="dim">模型一口气要求 3 个工具 → 3 个都在同一个 Turn 里执行（同一次模型调用的产物）</text>
+
+  <!-- Turn 2 -->
+  <rect x="40" y="200" width="640" height="70" rx="8" class="turn"/>
+  <text x="60" y="222" class="label" font-weight="700">Turn 2：结果回填后再调模型</text>
+  <rect x="60" y="232" width="200" height="26" rx="5" class="msg"/>
+  <text x="160" y="249" text-anchor="middle" class="label">模型调用（stop）</text>
+  <text x="280" y="249" class="dim">→ 无工具调用，循环结束</text>
+
+  <!-- 说明 -->
+  <text x="40" y="300" class="label" font-weight="700">关键区分</text>
+  <text x="40" y="322" class="dim">Trace 是持久化单位：一个会话文件记录一次完整运行的轨迹。</text>
+  <text x="40" y="342" class="dim">Turn 是进度单位：UI 每完成一轮工具批刷新一次；turn_start / turn_end 包裹。</text>
+</svg>
