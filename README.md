@@ -149,9 +149,10 @@ learn-pi/
 │   └── glossary.md        # 术语表
 ├── learn_pi_lab/          # Python 教学实验包（仅标准库）
 │   └── labs/              # 11 个实验模块
+├── examples/harness/      # 构建路线：裸 API → 完整 Harness（12 步，B01-B06 完成）
 ├── projects/              # 4 个离线实战项目
-├── scripts/               # 课程契约与链接检查脚本
-└── tests/                 # 107 个单元测试
+├── scripts/               # 课程契约与链接检查、站点构建
+└── tests/                 # 108 个单元测试
 ```
 
 ## 快速开始

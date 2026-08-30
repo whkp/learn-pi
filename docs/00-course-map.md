@@ -15,9 +15,9 @@
 - **双重对照**：每章配有可运行的 Python 教学模型（标准库、离线、确定），以及 Tau（Pi 的 Python 对照实现）的真实代码。
 - **工程化验证**：107 个单元测试 + 课程契约检查 + 链接检查，全部离线可复现。
 
-## 三条阅读路线
+## 四条阅读路线
 
-课程有三个入口，按你的目的选择：
+课程有四个入口，按你的目的选择：
 
 <div class="chapter-grid">
   <div class="chapter-card">
@@ -34,6 +34,11 @@
     <span class="card-num">源码</span>
     <h3>按 Pi 源码追踪</h3>
     <p>以 <a href="pi-source-map.md">源码映射</a> 为索引，按固定基线（0.84.2）追踪每个断言的源码位置。</p>
+  </div>
+  <div class="chapter-card">
+    <span class="card-num">构建</span>
+    <h3>从裸 API 写一个 Harness</h3>
+    <p>连续编码主线：<a href="../examples/harness/README.md">examples/harness</a>，12 步从裸 API 调用写到完整可评测 Harness（B01-B06 已完成）。</p>
   </div>
 </div>
 

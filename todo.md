@@ -115,11 +115,11 @@
 
 ### P1-01 新增主线目录
 
-- [ ] 新增 `docs/12-build-a-harness/README.md`，作为贯穿式项目总览。
-- [ ] 新增 `examples/harness/` 作为逐章演进的代码目录。
-- [ ] 每一步保留独立可运行状态，不直接覆盖上一阶段。
+- [x] 新增 `examples/harness/README.md`，作为贯穿式项目总览（主线代码放 examples/ 而非 docs/，README 总览在主线目录）。
+- [x] 新增 `examples/harness/` 作为逐章演进的代码目录（B01-B06 已完成，B07-B12 待续）。
+- [x] B01-B06 每一步保留独立可运行状态，不直接覆盖上一阶段。
 - [ ] 每一步提供 `README.md`、完整实现、TODO 实现和测试。
-- [ ] 在 `docs/00-course-map.md` 增加“机制路线”和“构建路线”双入口。
+- [x] 在 `docs/00-course-map.md` 增加四条路线（概念/实验/源码/构建）。
 
 建议的 12 个步骤：
 
