@@ -314,3 +314,46 @@ main table tbody tr:nth-child(even) {
     display: none !important;
   }
 }
+
+/* ---------- 代码折叠（learnpi.js） ---------- */
+main pre.learnpi-collapsible {
+  position: relative;
+  max-height: 32em;
+  overflow: hidden;
+  padding-bottom: 3em;
+}
+
+main pre.learnpi-collapsible.learnpi-expanded {
+  max-height: none;
+  padding-bottom: 3em;
+}
+
+main .learnpi-collapse-btn {
+  position: absolute;
+  bottom: 0.5em;
+  right: 0.7em;
+  font-size: 0.8em;
+  padding: 0.35em 0.9em;
+  border-radius: 6px;
+  border: 1px solid var(--table-border);
+  background: var(--sidebar-bg);
+  color: var(--links);
+  cursor: pointer;
+  font-family: var(--font-stack);
+}
+
+main .learnpi-collapse-btn:hover {
+  background: var(--hover-bg);
+}
+
+main .learnpi-collapse-btn:focus-visible {
+  outline: 2px solid var(--links);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main .learnpi-collapsible,
+  main .learnpi-collapse-btn {
+    transition: none !important;
+  }
+}

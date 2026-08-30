@@ -11,3 +11,4 @@ edit-url-template = "https://github.com/whkp/learn-pi/edit/main/{path}"
 default-theme = "navy"
 preferred-dark-theme = "navy"
 additional-css = ["theme/custom.css"]
+additional-js = ["theme/learnpi.js"]

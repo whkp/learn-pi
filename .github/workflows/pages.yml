@@ -25,11 +25,10 @@ jobs:
         with:
           mdbook-version: '0.5.4'
 
-      - name: Generate site source (docs -> src + SUMMARY.md)
-        run: python3 scripts/build_site.py
-
-      - name: Build book
-        run: mdbook build
+      - name: Check and build site (contract + links + tests + mdbook)
+        run: |
+          chmod +x scripts/build_and_check.sh
+          ./scripts/build_and_check.sh
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

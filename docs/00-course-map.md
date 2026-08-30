@@ -15,6 +15,28 @@
 - **双重对照**：每章配有可运行的 Python 教学模型（标准库、离线、确定），以及 Tau（Pi 的 Python 对照实现）的真实代码。
 - **工程化验证**：107 个单元测试 + 课程契约检查 + 链接检查，全部离线可复现。
 
+## 三条阅读路线
+
+课程有三个入口，按你的目的选择：
+
+<div class="chapter-grid">
+  <div class="chapter-card">
+    <span class="card-num">概念</span>
+    <h3>按章节顺序读</h3>
+    <p>从 <a href="01-architecture/README.md">01 架构总览</a> 到 <a href="11-projects-and-evaluation/README.md">11 实战与评测</a>，一条线理解 Pi 的核心设计。</p>
+  </div>
+  <div class="chapter-card">
+    <span class="card-num">实验</span>
+    <h3>直接跑离线 Lab</h3>
+    <p>跳过背景，先跑起来：<code>python3 -m learn_pi_lab lab agent-loop</code> 和 <code>mini-agent</code>，遇到不懂的机制再回章节。</p>
+  </div>
+  <div class="chapter-card">
+    <span class="card-num">源码</span>
+    <h3>按 Pi 源码追踪</h3>
+    <p>以 <a href="pi-source-map.md">源码映射</a> 为索引，按固定基线（0.84.2）追踪每个断言的源码位置。</p>
+  </div>
+</div>
+
 ## 章节总览
 
 <!-- course-chapter-manifest:start -->

@@ -199,6 +199,47 @@ class MiniAgentLoopTests(unittest.TestCase):
         self.assertEqual("streaming", updates[0].tool_name)
         self.assertEqual("progress...", updates[0].partial_result.content)
 
+    def test_tool_terminate_ends_the_loop_early(self) -> None:
+        # 工具结果 terminate=True 时，循环发完 turn_end 提前结束，不再问模型。
+        provider = scripted_provider(
+            [
+                AssistantMessage(
+                    content="",
+                    tool_calls=(ToolCall("call-1", "list_files", {}),),
+                    stop_reason="toolUse",
+                ),
+                AssistantMessage(content="must not be asked", stop_reason="stop"),
+            ]
+        )
+        tools = [
+            AgentTool(
+                name="list_files",
+                description="List files",
+                parameters={},
+                execute_fn=lambda arguments, on_update=None: AgentToolResult(
+                    "done", terminate=True
+                ),
+            )
+        ]
+        messages: list[object] = []
+
+        events = list(
+            run_agent_loop(
+                provider=provider,
+                model="demo",
+                system="system",
+                messages=messages,  # type: ignore[arg-type]
+                prompt="list files",
+                tools=tools,
+            )
+        )
+
+        final = events[-1]
+        self.assertIsInstance(final, AgentEndEvent)
+        # 只问了模型一次：工具请求 terminate 后没有第二轮模型调用。
+        roles = [message.role for message in final.messages]
+        self.assertEqual(["user", "assistant", "toolResult"], roles)
+
     def test_max_turns_exceeded_ends_with_an_error_message(self) -> None:
         provider = scripted_provider(
             [

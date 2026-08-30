@@ -6,7 +6,7 @@
 
 - 理解 Agent Loop 与"直接调用 LLM""Workflow"的本质区别：决策权在谁手上。
 - 分清 Trace 与 Turn 两个精确概念。
-- 理解 `stopReason` 是循环唯一的终止信号，以及循环为何是双层结构。
+- 理解循环的继续/终止由什么决定：不止 `stopReason`，还有工具批、终止提示、pending 消息与钩子。
 
 ## 一、问题：模型只说话，不干活
 
@@ -39,20 +39,28 @@
 - **进度与 UI 按 Turn 刷新**：每一轮工具调用是一屏进度。
 - **工具结果配对按 Turn 内的调用 ID 对齐**：结果必须回填给产生它的那次调用。
 
-## 三、stopReason：循环的唯一终止信号
+## 三、什么决定继续、什么决定终止
 
-循环的每一步都看模型的 `stopReason` 决定去留：
+循环的继续/终止不能只看单一信号。Pi 的决策来自**模型 API 返回值**与**框架注入状态**的合流：
 
-| stopReason | 含义 | 循环做什么 |
-|---|---|---|
-| `stop` | 正常结束 | 输出最终文本，结束 |
-| `toolUse` | 模型请求工具 | 执行工具，回填，继续 |
-| `error` / `aborted` | 异常终止 | 记录错误，立即结束 |
-| `length` | token 超限截断 | 见下方取舍 |
+| 来源 | 状态 | 对循环的影响 |
+|------|------|-------------|
+| 模型返回值 | `stopReason = stop` | 正常结束（若无 pending） |
+| 模型返回值 | `stopReason = toolUse` + 有 toolCall | 执行工具批，继续 |
+| 模型返回值 | `stopReason = error` / `aborted` | 立即终止 |
+| 模型返回值 | `stopReason = length` + 有 toolCall | **全部失败这些调用**，不冒险执行 |
+| 工具结果 | 本批全部 `terminate = true` | 发完 turn_end 提前终止 |
+| 框架注入 | pending messages / steering | 先处理再进下一轮 |
+| 框架注入 | follow-up 消息 | Agent 本可停止但被继续 |
+| 框架注入 | `shouldStopAfterTurn` 钩子 | 返回 true 即提前终止 |
+| 框架注入 | 取消信号 | 立即中断 |
 
-**`length` 特判是 Pi 的一个安全取舍**：token 超限时，消息里残留的工具调用参数可能被截断、不完整。执行一个参数残缺的调用（比如删文件路径被截断）是危险的，所以 Pi 选择**全部失败这些调用**，而不是冒险执行。
+### 两个容易误解的点
 
-## 四、双层循环：模型驱动 + harness 托底
+1. **`stopReason = toolUse` 不一定意味着继续**：如果工具批全部请求终止（`terminate`），循环在发完 `turn_end` 后提前结束，不再问模型。
+2. **`stopReason = length` 的取舍**：token 超限时，残留的工具调用参数可能被截断、不完整。执行一个参数残缺的调用（比如删文件路径被截断）是危险的，所以 Pi 选择**全部失败这些调用**，而不是冒险执行——安全优先。
+
+### 双层循环
 
 循环是双层的，两层的职责不同：
 
@@ -72,8 +80,8 @@ Pi 还暴露了三个钩子让产品层**不改循环也能定制行为**：`pre
 
 ## 当前 Pi 行为
 
-- 循环由 pi-agent-core 提供，Provider 无关；终止条件：`stopReason` 为 `stop`/`error`/`aborted`，或钩子 `shouldStopAfterTurn` 返回 true。
-- 工具执行默认并行，可全局或按工具配置为顺序（编辑文件这类工具常设为串行）。
+- 循环由 pi-agent-core 提供，Provider 无关；继续/终止由 stopReason、工具批 terminate、pending/follow-up 与钩子共同决定。
+- 工具执行默认并行，可全局或按工具配置为顺序；单批中全部工具请求终止才提前结束。
 
 ## 在 Pi 里怎么操作
 
@@ -106,7 +114,7 @@ for turn in range(1, max_turns + 1):
     yield TurnStartEvent()
 ```
 
-对照 Pi 的真实实现（`agent-loop.ts` 的 `runLoop`）：`_ask_model` ↔ 流式请求 assistant、`_execute_call` ↔ 执行工具批、`yield 事件` ↔ 发事件。教学模型刻意简化了三件事：无 steering/follow-up 钩子、工具只串行、无取消信号——这三个都是产品层问题，不是循环本质。Tau 的 `tau_agent/loop.py` 是同样的循环，只是异步版并完整保留钩子。
+对照 Pi 的真实实现（`agent-loop.ts` 的 `runLoop`）：`_ask_model` ↔ 流式请求 assistant、`_execute_call` ↔ 执行工具批、`yield 事件` ↔ 发事件。教学模型刻意简化了三件事：无 steering/follow-up 钩子、工具只串行、无取消信号——这三个都是产品层问题，不是循环本质。循环的终止语义也做了教学简化：mini_agent 串行执行工具，任一结果 `terminate=True` 即提前结束（Pi 是并行批，需全部终止才结束）——语义方向一致，简化在并发程度。Tau 的 `tau_agent/loop.py` 是同样的循环，只是异步版并完整保留钩子。
 
 ```sh
 python3 -m learn_pi_lab lab agent-loop   # 脚本化 trace：终止/未知工具/异常工具
@@ -129,7 +137,7 @@ python3 -m unittest tests.test_01_agent_loop tests.test_13_mini_agent -v
 
 - **决策权在模型**：步骤流转由模型输出驱动，harness 只执行。
 - **Trace 是运行，Turn 是一次模型调用 + 一批工具**：持久化按 Trace，进度按 Turn。
-- **stopReason 是唯一终止信号**；`length` 时宁可失败也不执行残缺调用。
+- **终止是多方合流**：stopReason、工具批 terminate、pending/follow-up、钩子与取消共同决定；`length` 时宁可失败也不执行残缺调用。
 - **双层循环 + 三个钩子**：循环稳定，变化通过钩子发生。
 
 循环只负责"转"，工具怎么被管住、结果怎么回填，是下一章的主题——[工具系统](../03-tools/README.md)。

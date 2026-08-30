@@ -173,13 +173,22 @@ python3 -m unittest discover -s tests -v
 
 ## 验证
 
+一键检查 + 站点构建（`docs/` 是单一事实源，发布前必须运行）：
+
+```sh
+./scripts/build_and_check.sh                  # 契约 + 链接 + 测试 + mdBook 构建
+./scripts/build_and_check.sh --skip-build     # 只检查，不构建站点
+```
+
+单独执行：
+
 ```sh
 python3 -m unittest discover -s tests -v
 python3 scripts/check_course_contract.py
 python3 scripts/check_markdown_links.py
 ```
 
-三条命令都输出 `OK` / 测试全绿，即视为通过。
+三条命令都输出 `OK` / 测试全绿，即视为通过。CI（`.github/workflows/pages.yml`）在每次 push 时自动执行同样的检查并发布网站。
 
 ## 教学取舍
 

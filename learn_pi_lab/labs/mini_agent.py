@@ -83,10 +83,15 @@ AgentMessage = UserMessage | AssistantMessage | ToolResultMessage
 
 @dataclass(frozen=True)
 class AgentToolResult:
-    """A deterministic tool outcome with an error flag."""
+    """A deterministic tool outcome with an error flag.
+
+    ``terminate`` 对应 Pi 的提前终止提示：本批工具全部返回 ``terminate=True``
+    时，循环在发完 ``turn_end`` 后提前结束，而不是再问模型。
+    """
 
     content: str
     is_error: bool = False
+    terminate: bool = False
 
 
 ToolUpdateCallback = Callable[[str], None]
@@ -232,6 +237,7 @@ def run_agent_loop(
             yield AgentEndEvent(messages=tuple(messages))
             return
 
+        terminate = False
         for call in assistant.tool_calls:
             yield ToolExecutionStartEvent(tool_name=call.name, arguments=call.arguments)
             result, updates = _execute_call(call, tools)
@@ -252,7 +258,16 @@ def run_agent_loop(
             yield MessageStartEvent(message=result_message)
             yield MessageEndEvent(message=result_message)
 
+            # Pi 语义：单批并行工具中，只有全部结果都 terminate=True 才提前终止。
+            # 教学模型简化为串行执行，任一结果请求终止即提前结束。
+            terminate = result.terminate
+            if terminate:
+                break
+
         yield TurnEndEvent(message=assistant)
+        if terminate:
+            yield AgentEndEvent(messages=tuple(messages))
+            return
         yield TurnStartEvent()
 
     error = AssistantMessage(content="", stop_reason="error")
