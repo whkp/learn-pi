@@ -28,3 +28,6 @@ dist/
 
 # WorkBuddy 会话数据
 .workbuddy/
+
+# 内部改造计划（本地保留，不入库）
+/todo.md

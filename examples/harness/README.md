@@ -26,7 +26,7 @@
 | B11 | Provider / RPC | provider registry + JSONL | 三者分离、分帧 |
 | B12 | 组合成可评测 Harness | 完整项目 | 综合应用 |
 
-**进度**：B01-B06 已完成；B07-B12 见 [todo.md](../../todo.md) 的 P1-01。
+**进度**：B01-B06 已完成；B07-B12 陆续更新中。
 
 ## 每步的标准结构
 
