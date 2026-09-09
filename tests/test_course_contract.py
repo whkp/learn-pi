@@ -23,7 +23,7 @@ class CourseContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             source_map = Path(directory) / "pi-source-map.md"
             source_map.write_text(
-                "<!-- pi-baseline: version=0.84.2 commit=not-a-commit -->\n",
+                "<!-- pi-baseline: version=0.85.1 commit=not-a-commit -->\n",
                 encoding="utf-8",
             )
 

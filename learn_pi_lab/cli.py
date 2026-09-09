@@ -29,6 +29,7 @@ from .labs.session_tree import (
     TranscriptTree,
     UnknownTranscriptEntry,
 )
+from .labs.system_prompt import demo as demo_system_prompt
 from .labs.tool_permissions import CommandRequest, Policy, dispatch_if_allowed
 
 
@@ -275,6 +276,12 @@ def _run_rpc_jsonl_lab() -> int:
     return 0
 
 
+def _run_system_prompt_lab() -> int:
+    """Print a fixed comparison of the default and custom assembly paths."""
+    print(json.dumps(demo_system_prompt(), ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Print the available course-lab entry points."""
     parser = argparse.ArgumentParser(description="Offline Learn Pi Python labs")
@@ -296,6 +303,7 @@ def main(argv: list[str] | None = None) -> int:
             "providers",
             "reliability",
             "rpc-jsonl",
+            "system-prompt",
         ),
     )
     lab_parser.add_argument("directory", nargs="?", type=Path)
@@ -376,6 +384,7 @@ def main(argv: list[str] | None = None) -> int:
         "providers",
         "reliability",
         "rpc-jsonl",
+        "system-prompt",
     }:
         if (
             arguments.directory is not None
@@ -392,6 +401,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_providers_lab()
         if arguments.name == "reliability":
             return _run_reliability_lab()
+        if arguments.name == "system-prompt":
+            return _run_system_prompt_lab()
         return _run_rpc_jsonl_lab()
     elif arguments.command == "lab":
         lab_parser.print_help()

@@ -43,6 +43,37 @@ Agent 的每一次模型调用都依赖网络和第三方服务。过载、限�
 
 - Provider 层有统一的重试与退避；取消通过 AbortSignal 传递到流式调用。
 - 重试进度以事件形式可见（`ProviderRetryEvent`），用户在 TUI 里看到"第 N 次重试"而不是干等。
+- 重试与流式输出不冲突：`runLoop` 的流式请求失败时错误通过 `stopReason = "error"` 走正常终止路径（`agent-loop.ts` 215 行），而不是抛出未捕获异常——可靠性是"变成一种消息"，不是"变成一种崩溃"。
+- 0.84.4 起支持 RPC 队列清理（`clear_queue`）：积压的 steering / follow-up 消息可以取出并清空，而不是只能默默执行。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 错误变成消息而非异常 | `packages/agent/src/agent-loop.ts`（215） | `stopReason === "error"` 走终止路径 |
+| 取消信号贯通 | `executeToolCalls(..., signal)`（409–415） | AbortSignal 传到每个工具 |
+| 重试对用户可见 | `ProviderRetryEvent` | TUI 显示第 N 次重试 |
+| 队列可清空 | v0.84.4 release notes（RPC `clear_queue`） | 取出并清空积压消息 |
+| 退避教学模型 | `learn_pi_lab/labs/reliability.py` `retry()` | 分类→退避→封顶 |
+
+## 失败与边界实验
+
+`lab reliability` 与 `tests/test_09_reliability` 覆盖的重试矩阵：
+
+| 失败类型 | 分类 | 策略 | 为什么 |
+|---|---|---|---|
+| 429 限流 | 可重试 | 指数退避 + 封顶 + 看 `Retry-After` | 服务端明确说"稍后再来" |
+| 5xx | 可重试 | 指数退避 + 封顶 | 瞬时故障概率高 |
+| 401 / 403 | 不可重试 | 立即失败并提示配认证 | 重试只是刷错误日志 |
+| 400 参数错误 | 不可重试 | 立即失败 | 重试同样的错误参数没有意义 |
+| 网络中断（流中途） | 视情况 | 已产出部分按截断处理 | 不能重复计费整轮 |
+
+关键不变量：**重试发生在"一次模型调用"的边界内**。工具已经产生的副作用不会因重试消失——所以有副作用的工具必须自己幂等，重试机制救不了它。
+
+```sh
+python3 -m learn_pi_lab lab reliability
+python3 -m unittest tests.test_09_reliability -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -76,6 +107,8 @@ result = retry(operation, attempts=3, base_delay=0.25)  # sleep 可注入，测�
 ```sh
 python3 -m learn_pi_lab lab reliability   # 打印重试元数据，不真睡
 ```
+
+> 这一模块的核心代码在[核心代码导览 · 重试与退避](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

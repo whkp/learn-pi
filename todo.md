@@ -10,11 +10,11 @@
 
 ### 当前基线
 
-- 11 个主题章节，文档约 1,400 行。
+- 12 个主题章节（含 04b 系统提示词），文档约 1,800 行。
 - Python 标准库离线实验，实验/项目/测试约 4,500 行。
 - 107 个单元测试。
 - 已有课程契约检查、Markdown 链接检查、Pi 0.84.2 源码映射。
-- 当前文档源在 `docs/`，通过 `scripts/build_site.py` 生成 mdBook 的 `src/`。
+- 当前文档源在 `docs/`，通过 `site/build.mjs`（Node）直接生成静态站点 `dist/`。
 - 当前章节以“是什么 / 怎么做 / 为什么 / 实验 / 验证 / 回顾”为主要结构。
 - 已完成参考站点审阅：`https://zhanghandong.github.io/pi-book/ch01-prologue.html`。
 - 参考站点同样使用 mdBook，证明章节分组、Mermaid、快捷键、搜索、打印和前后导航可以在不迁移框架的前提下完成。

@@ -20,12 +20,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install mdBook
-        uses: peaceiris/actions-mdbook@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          mdbook-version: '0.5.4'
+          node-version: '22'
+          cache: npm
 
-      - name: Check and build site (contract + links + tests + mdbook)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Check and build site (contract + links + tests + static site)
         run: |
           chmod +x scripts/build_and_check.sh
           ./scripts/build_and_check.sh
@@ -36,7 +42,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./book
+          path: ./dist
 
   deploy:
     environment:

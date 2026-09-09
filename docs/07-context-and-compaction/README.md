@@ -57,6 +57,29 @@ Pi 的 `shouldCompact` 判断：`contextTokens > contextWindow - reserveTokens`�
 - 自动压缩默认开启；手动压缩 `/[compact 指令]`，可选指令聚焦摘要内容。
 - `/tree` 切换分支时为离开的分支生成摘要（分支摘要），是导航的上下文保留行为，不是导出功能。
 - 扩展在压缩前的定制边界是 `session_before_compact`。
+- 压缩属于"可能很长的准备"：循环在准备结束后会再取一次 steering 消息（`agent-loop.ts` 191 行的注释明确点名 compaction），压缩期间用户输入不会丢。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 压缩期间不吞用户输入 | `packages/agent/src/agent-loop.ts`（191） | "Preparation can be long-running (for example, compaction)" |
+| 压缩前扩展边界 | `session_before_compact` | extensions 文档与 `extensions/types.ts` |
+| 成对完整不变量 | `packages/agent/src/agent-loop.ts` `failToolCallsFromTruncatedMessage` | 入历史前保证 toolCall/toolResult 成对 |
+| 压缩的教学模型 | `learn_pi_lab/labs/compaction.py` | `compact()` 与 `COMPACTION_FIXTURE` |
+
+## 失败与边界实验
+
+`tests/test_05_compaction` 覆盖的三类边界，都指向同一条不变量——**压缩后历史仍然合法**：
+
+1. **压缩点选在工具批中间。** 摘要替换掉旧消息后，某个 `toolCall` 的 `toolResult` 被丢了——下一轮请求直接被 API 拒绝。修法：压缩边界必须对齐消息边界，且成对消息要么都进摘要、要么都保留。
+2. **摘要溢出预算。** 历史太大，摘要本身又接近窗口上限——压缩等于没压。修法：摘要也受预算约束；必要时对摘要再压缩，而不是允许摘要无限膨胀。
+3. **敏感信息进摘要。** 压缩让模型复述历史，密钥、个人路径会被写进摘要并长期驻留。修法：`session_before_compact` 钩子在压缩前脱敏；这是扩展介入压缩的唯一合法时机。
+
+```sh
+python3 -m learn_pi_lab lab compaction
+python3 -m unittest tests.test_05_compaction -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -86,6 +109,8 @@ while True:
 ```sh
 python3 -m learn_pi_lab lab compaction   # 打印保留/摘要集合
 ```
+
+> 这一模块的核心代码在[核心代码导览 · 压缩切割点](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

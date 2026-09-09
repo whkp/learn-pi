@@ -45,6 +45,36 @@ RPC 模式的完整约定还包括：**记录大小上限**、**方法白名单*
 
 - SDK：`session.subscribe(...)` 订阅事件（注意是 subscribe 不是 on）；`createCodingTools` 需要 `cwd`。
 - RPC/JSON 模式的启动参数、帧类型与输出顺序以固定基线的 sdk/rpc/json 文档为准。
+- 0.84.4 起 RPC 支持 `clear_queue`：取出并清空排队中的 steering / follow-up 消息——协议层的队列从"只进不出"变成可观测、可干预。
+- 0.85.0 起实验性的 `protocol` 包使用 CBOR 二进制协议、`server` 包提供 PiServer 会话服务；两者仍是非稳定 API，课程只登记不教学。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| SDK 订阅入口 | `session.subscribe` | 不是 `on`（基线核实易错点） |
+| 工具集创建需要 cwd | `createCodingTools` | `packages/coding-agent/src/core/tools/index.ts` |
+| JSON 输出契约 | `packages/coding-agent/docs/json.md` | stdout 事件流 |
+| RPC 帧契约 | `packages/coding-agent/docs/rpc.md` | 0.84.4 起 `clear_queue` |
+| 二进制协议（实验） | `packages/protocol/` | CBOR，非稳定 |
+| 分帧教学模型 | `learn_pi_lab/labs/rpc_jsonl.py` `JsonlRpcCodec` | 按行缓冲解粘包/半包 |
+
+## 失败与边界实验
+
+`lab rpc-jsonl` 与 `tests.test_10_rpc_jsonl` 覆盖分帧的三种病态输入：
+
+| 输入 | 症状 | 正确处理 |
+|---|---|---|
+| 粘包：`{"a":1}{"b":2}` 一次到达 | 按块 `json.loads` 报错 | 按行缓冲，逐行解析 |
+| 半包：`{"a":1` 先到，`}` 后到 | 前半行解析失败、后半行是垃圾 | 缓冲直到出现完整行 |
+| 非法 JSON 行 | 整个流崩溃 | 报帧错误、保留后续帧 |
+
+三种错误对应同一结论：**协议解析按帧（行）而不是按块**。这也是为什么 stdout 是协议——帧边界是唯一双方都认同的分隔符，任何"我猜它到齐了"的解析都会在真实网络上碎掉。
+
+```sh
+python3 -m learn_pi_lab lab rpc-jsonl
+python3 -m unittest tests.test_10_rpc_jsonl -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -78,6 +108,8 @@ def feed(self, chunk: str) -> tuple[RpcRequest, ...]:
 ```sh
 python3 -m learn_pi_lab lab rpc-jsonl
 ```
+
+> 这一模块的核心代码在[核心代码导览 · RPC 分帧](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

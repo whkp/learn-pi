@@ -62,6 +62,37 @@ registry.add(write_tool)
 
 - 默认四个核心工具：`read`、`write`、`edit`、`bash`；`grep`/`find`/`ls` 等只读工具按配置启用。
 - 执行结果以 `toolResult` 消息回填（含 `toolCallId` 配对），循环才能继续。
+- 工具有 `executionMode` 元数据：任一被调工具声明为 `"sequential"`，本批全部改为串行执行；否则按全局配置并行。并发安全因此成为**工具作者的责任**，不是循环的猜测。
+- 0.84.3 起提供可选的 PowerShell 工具（Windows 原生命令执行）；文件探索指南会按工具集改写措辞。
+- 模型看到的工具清单由 `toolSnippets` 决定：注册了工具但没给一行描述，模型就"看不见"它。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 默认工具集四件套 | `packages/coding-agent/src/core/system-prompt.ts` `DEFAULT_TOOLS` | `read, bash, edit, write` |
+| 并行/串行调度 | `packages/agent/src/agent-loop.ts` `executeToolCalls` | `executionMode === "sequential"` 强制整批串行 |
+| 参数截断防护 | `packages/agent/src/agent-loop.ts` `failToolCallsFromTruncatedMessage` | `length` 截断时整批失败 |
+| 工具创建与 cwd 绑定 | `packages/coding-agent/src/core/tools/index.ts` | `createCodingTools` 需要 cwd |
+| 工具清单进提示词 | `packages/coding-agent/src/core/system-prompt.ts` `visibleTools` | 无 snippet 则清单为 `(none)` |
+
+## 失败与边界实验
+
+`lab permissions` 用同一个策略函数走四条路径：
+
+| 场景 | 输入 | 谁拦下 | 结果 |
+|---|---|---|---|
+| 命令不在白名单 | `rm -rf /` | 硬闸门（命令令牌） | 拒绝，executor 未被调用 |
+| 相对路径穿越 | `../../etc/passwd` | 硬闸门（归一化 + 包含检查） | 拒绝 |
+| 符号链接逃逸 | 指向边界外的链接 | 硬闸门（`realpath` 后再判断） | 拒绝 |
+| 白名单内的合法读 | `ls` + 边界内路径 | — | 执行 |
+
+三条拒绝路径的共同点：**executor 完全没有运行**，因此零副作用。这就是"硬闸门"的定义——检查发生在执行之前，而不是靠事后撤销。
+
+```sh
+python3 -m learn_pi_lab lab permissions
+python3 -m unittest tests.test_02_tool_permissions -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -100,6 +131,8 @@ Tau 对照：`tau_agent/tools.py` 的 `AgentTool` 字段一致，只是 `execute
 ```sh
 python3 -m learn_pi_lab lab permissions
 ```
+
+> 这一模块的核心代码在[核心代码导览 · 工具权限闸门](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

@@ -63,6 +63,34 @@ Pi 的答案是：`~/.pi/agent/sessions/` 下按工作目录组织的 JSONL 文�
 - 会话自动保存到 `~/.pi/agent/sessions/`，按工作目录组织；格式版本 v3。
 - `/tree` 导航会话树与分支；`/export` 才生成 HTML——两者职责不同。
 - 旧版本会话加载时自动迁移到 v3。
+- 0.85.0 起 SDK 支持"可恢复的内存会话"：外部存储的会话条目可以经 SDK 恢复进内存会话，存储后端因此可替换（`session-backends` 仍是实验性包）。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 格式与迁移约定 | `packages/coding-agent/docs/session-format.md`、`sessions.md` | v3 与旧版迁移 |
+| 会话树导航 | TUI `/tree` 命令 | 分支是"从某节点重来" |
+| 树形结构的教学模型 | `learn_pi_lab/labs/session_tree.py` | `TranscriptTree` 只存父指针 |
+| 可恢复内存会话 | v0.85.0 release notes（SDK Session Management） | 外部存储条目恢复进内存 |
+
+## 失败与边界实验
+
+append-only 的 JSONL 会遇到哪些失败？`lab session-tree` 与 `tests/test_04_session_tree` 覆盖了四类：
+
+| 场景 | 表现 | 为什么安全 |
+|---|---|---|
+| 最后一行损坏（写一半崩溃） | 读取时丢弃不完整行，之前的历史完好 | append-only：坏只坏最后一条 |
+| 重复追加同一条目 | 树重建时按 ID 去重/报诊断 | ID 是幂等键 |
+| 引用不存在的父节点 | 报 `UnknownTranscriptEntry` 而不是静默丢分支 | 孤儿节点可见，不可悄悄消失 |
+| 从中间节点分叉后继续写 | 新记录父指针指向该节点，形成分支 | 认父不认子：重建由子向父 |
+
+对比一个反例：如果会话用"整文件重写"存储（读取-修改-写回），第 1 种失败会损坏**全部**历史，第 4 种需要显式的分支数据结构。append-only + 父指针把这两个问题都消解在格式层。
+
+```sh
+python3 -m learn_pi_lab lab session-tree
+python3 -m unittest tests.test_04_session_tree -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -95,6 +123,8 @@ def path_to(self, leaf_id: str) -> tuple[TranscriptEntry, ...]:
 ```sh
 python3 -m learn_pi_lab lab session-tree   # 打印一条 root → leaf 分支
 ```
+
+> 这一模块的核心代码在[核心代码导览 · 会话树](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

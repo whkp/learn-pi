@@ -8,8 +8,8 @@ import re
 
 
 BASELINE_MARKER = (
-    "<!-- pi-baseline: version=0.84.2 "
-    "commit=914cf1472e715297caa30db4b9535d534a9eb718 -->"
+    "<!-- pi-baseline: version=0.85.1 "
+    "commit=d981de1229ef899957bbe968bc8dcda02a21f477 -->"
 )
 CHAPTER_HEADINGS = (
     "## 学习目标",
@@ -20,7 +20,9 @@ CHAPTER_HEADINGS = (
 )
 MANIFEST_START = "<!-- course-chapter-manifest:start -->"
 MANIFEST_END = "<!-- course-chapter-manifest:end -->"
-NUMBERED_CHAPTER = re.compile(r"\d{2}-[^/]+/README\.md\Z")
+# 允许 `04b-system-prompt` 这类插入编号：新增章节时不重排已有目录，
+# 以免已经发布的章节 URL 失效。
+NUMBERED_CHAPTER = re.compile(r"\d{2}[a-z]?-[^/]+/README\.md\Z")
 BASELINE_COMMENT = re.compile(r"<!--\s*pi-baseline:.*?-->", re.DOTALL)
 
 
@@ -62,7 +64,7 @@ def discover_chapters(docs_dir: Path | str) -> list[Path]:
     if manifest is None:
         declared = [
             path.relative_to(docs).as_posix()
-            for path in sorted(docs.glob("[0-9][0-9]-*/README.md"))
+            for path in sorted(docs.glob("[0-9][0-9]*-*/README.md"))
         ]
     else:
         declared = manifest

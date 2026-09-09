@@ -69,6 +69,31 @@
 - 订阅 Provider：Claude Pro/Max、ChatGPT Plus/Pro（Codex）、GitHub Copilot、OpenRouter；API Key Provider：Anthropic、OpenAI、Google、DeepSeek、Mistral、Groq、Kimi、MiniMax、小米 MiMo 等。
 - 自定义 Provider 当前入口：`pi.registerProvider(...)` 配 pi-ai 的 `createProvider` 与 `api`（如 `openAICompletionsApi()`）；`streamSimple` 已移到 compat 包，是兼容导出。
 - 未配置认证的模型会加载但不出现 `/model`，直到有可用认证。
+- 0.85.1 新增 GPT-6 Astra（OpenAI API Key 与 Codex 订阅均可用）；0.85.0 起支持的 Anthropic 传输会按轮次保留 thinking effort，并在签名不匹配时安全恢复。
+- 模型目录是纯数据：`ModelRuntime.create()` 列出可用模型，挑不出可用模型就抛错——「有没有模型」在启动时就是可判定的，不需要等第一次请求失败。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 自定义 Provider 入口 | `pi.registerProvider()` | 配 `createProvider` + `api` |
+| 兼容导出非首选 | `@earendil-works/pi-ai/compat` `streamSimple` | 保留但不推荐 |
+| 模型注册表 | `packages/coding-agent/src/core/model-registry.ts` | 元数据与认证分离 |
+| 协议适配 | `packages/coding-agent/docs/custom-provider.md` | 协议翻译层说明 |
+| 模型配置文档 | `packages/coding-agent/docs/models.md` | 0.85 起含 thinking effort 持久化 |
+
+## 失败与边界实验
+
+Provider 层的失败集中在「三件事被混在一起」的时候：
+
+1. **认证缺失被当成模型不存在。** 修复前：没有 Key 的模型从列表消失，用户以为不支持；修复后（当前行为）：模型加载但 `/model` 不出现，配上认证即出现。区别在于**状态可解释**——「加载了但没凭据」比「不存在」可诊断得多。
+2. **协议差异写进业务代码。** 在循环里 `if provider == "anthropic": ...` 会让每个新 Provider 都改循环。修法：协议差异收敛在 translator 层，循环只面向统一消息类型。
+3. **thinking 签名不匹配。** Anthropic 的签名思考块在重放/传输中可能失配。0.85.0 起的做法是按轮次保留 effort 并安全恢复，而不是丢弃整个思考块——降级而不是失败。
+
+```sh
+python3 -m learn_pi_lab lab providers
+python3 -m unittest tests.test_08_provider_registry -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -92,6 +117,8 @@ selection = registry.select("openai-completions", "demo-1")
 ```sh
 python3 -m learn_pi_lab lab providers
 ```
+
+> 这一模块的核心代码在[核心代码导览 · Provider 注册表](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

@@ -1,46 +1,12 @@
-<div class="home-hero">
-  <h1>Learn Pi</h1>
-  <p class="tagline">面向开发者的 Pi 编码智能体学习仓库：准确资料、可运行的 Python 实验、自动化测试与离线实战项目。</p>
-  <div class="hero-actions">
-    <a class="hero-btn primary" href="01-architecture/">从架构开始读</a>
-    <a class="hero-btn secondary" href="02-agent-loop/">直接看 Agent Loop</a>
-  </div>
-</div>
+# 课程地图
 
 ## 这门课在讲什么
 
-**agent = LLM + tool use**。模型提供语言、推理，以及"下一步调用哪个工具"的决策；其余一切——消息、工具、权限、上下文、会话——都由包住模型的 harness 提供。本课程以 Pi 为蓝本，每一章围绕一个大主题，讲清"是什么 / 怎么做 / 为什么"，重点介绍 Pi 的核心设计。
+**agent = LLM + tool use**（核心循环的最小闭环，不是 Agent 系统的能力全集）。模型提供语言、推理、"下一步调用哪个工具"的决策，并因此在循环内自主承担 Planning；Memory 则由 harness 拆成消息数组、会话与压缩三件机制，与工具、权限、上下文一样，都是包住模型的 harness 的职责。本课程以 Pi 为蓝本，每一章围绕一个大主题，讲清"是什么 / 怎么做 / 为什么"，重点介绍 Pi 的核心设计。
 
-- **固定基线**：Pi 0.84.2 @ `914cf1472e715297caa30db4b9535d534a9eb718`，任何 API 细节以该版本源码和官方文档（pi.dev）为准。
+- **固定基线**：Pi 0.85.1 @ `d981de1229ef899957bbe968bc8dcda02a21f477`，任何 API 细节以该版本源码和官方文档（pi.dev）为准。
 - **双重对照**：每章配有可运行的 Python 教学模型（标准库、离线、确定），以及 Tau（Pi 的 Python 对照实现）的真实代码。
-- **工程化验证**：107 个单元测试 + 课程契约检查 + 链接检查，全部离线可复现。
-
-## 四条阅读路线
-
-课程有四个入口，按你的目的选择：
-
-<div class="chapter-grid">
-  <div class="chapter-card">
-    <span class="card-num">概念</span>
-    <h3>按章节顺序读</h3>
-    <p>从 <a href="01-architecture/README.md">01 架构总览</a> 到 <a href="11-projects-and-evaluation/README.md">11 实战与评测</a>，一条线理解 Pi 的核心设计。</p>
-  </div>
-  <div class="chapter-card">
-    <span class="card-num">实验</span>
-    <h3>直接跑离线 Lab</h3>
-    <p>跳过背景，先跑起来：<code>python3 -m learn_pi_lab lab agent-loop</code> 和 <code>mini-agent</code>，遇到不懂的机制再回章节。</p>
-  </div>
-  <div class="chapter-card">
-    <span class="card-num">源码</span>
-    <h3>按 Pi 源码追踪</h3>
-    <p>以 <a href="pi-source-map.md">源码映射</a> 为索引，按固定基线（0.84.2）追踪每个断言的源码位置。</p>
-  </div>
-  <div class="chapter-card">
-    <span class="card-num">构建</span>
-    <h3>从裸 API 写一个 Harness</h3>
-    <p>连续编码主线：<a href="../examples/harness/README.md">examples/harness</a>，12 步从裸 API 调用写到完整可评测 Harness（B01-B06 已完成）。</p>
-  </div>
-</div>
+- **工程化验证**：131 个单元测试 + 课程契约检查 + 链接检查，全部离线可复现。
 
 ## 章节总览
 
@@ -50,6 +16,7 @@
 - `02-agent-loop/README.md`
 - `03-tools/README.md`
 - `04-messages-and-memory/README.md`
+- `04b-system-prompt/README.md`
 - `05-sessions/README.md`
 - `06-events-and-extensions/README.md`
 - `07-context-and-compaction/README.md`
@@ -59,16 +26,20 @@
 - `11-projects-and-evaluation/README.md`
 <!-- course-chapter-manifest:end -->
 
+### 阶段一 · 架构与核心机制
+
+先建立整体心智模型：谁在循环里，谁在循环外。
+
 <div class="chapter-grid">
   <a class="chapter-card" href="01-architecture/">
     <span class="card-num">01</span>
     <h3>架构总览</h3>
-    <p>Pi 的分层与核心设计：agent = LLM + tool use，模型无关的核心、产品环境、前端如何通过事件契约解耦。</p>
+    <p>Pi 的分层与核心设计：agent = LLM + tool use 最小闭环，Planning 与 Memory 各由谁承担，模型无关的核心、产品环境、前端如何通过事件契约解耦。</p>
   </a>
   <a class="chapter-card" href="02-agent-loop/">
     <span class="card-num">02</span>
     <h3>Agent Loop</h3>
-    <p>循环如何驱动模型工作：模型决定、harness 执行；Trace 与 Turn 的区别；stopReason 是唯一终止信号。</p>
+    <p>循环如何驱动模型工作：模型决定、harness 执行；Trace 与 Turn 的区别；stopReason 与终止条件。</p>
   </a>
   <a class="chapter-card" href="03-tools/">
     <span class="card-num">03</span>
@@ -80,6 +51,18 @@
     <h3>消息与记忆</h3>
     <p>对话历史如何组织与传递：role 判别、工具成对回填、两类记忆的分工。</p>
   </a>
+  <a class="chapter-card" href="04b-system-prompt/">
+    <span class="card-num">04b</span>
+    <h3>系统提示词</h3>
+    <p>每轮请求的第一个决定：五段拼装、customPrompt 与默认路径的差别、三级回退链。</p>
+  </a>
+</div>
+
+### 阶段二 · 状态与边界
+
+状态存在哪一层？出错了边界在哪？
+
+<div class="chapter-grid">
   <a class="chapter-card" href="05-sessions/">
     <span class="card-num">05</span>
     <h3>会话管理</h3>
@@ -95,6 +78,13 @@
     <h3>上下文压缩</h3>
     <p>有限窗口如何装下无限对话：两层防护、压缩不是丢消息而是让模型总结它自己、成对不拆。</p>
   </a>
+</div>
+
+### 阶段三 · 集成与实践
+
+把前面所有边界接起来，做成能跑、能测的东西。
+
+<div class="chapter-grid">
   <a class="chapter-card" href="08-providers-and-models/">
     <span class="card-num">08</span>
     <h3>Provider 与模型</h3>
@@ -115,10 +105,25 @@
     <h3>实战与评测</h3>
     <p>四个离线 mini-project 训练可迁移的 Agent 工程边界，测试与评测构成同一条质量链。</p>
   </a>
+</div>
+
+### 附录
+
+<div class="chapter-grid">
   <a class="chapter-card" href="glossary.md">
     <span class="card-num">附</span>
     <h3>术语表</h3>
     <p>课程涉及的关键术语：Pi 基线、当前 Pi 行为、Python 教学模型、主章节。</p>
+  </a>
+  <a class="chapter-card" href="code-tour.md">
+    <span class="card-num">附</span>
+    <h3>核心代码导览</h3>
+    <p>九个核心机制的精选片段与逐段解读：循环、权限、会话树、压缩、事件、分帧、重试、提示词、注册表。</p>
+  </a>
+  <a class="chapter-card" href="pi-source-map.md">
+    <span class="card-num">附</span>
+    <h3>Pi 源码映射</h3>
+    <p>固定基线（0.85.1）、源码入口与常见误解对照，每个断言都能回溯到具体位置。</p>
   </a>
 </div>
 
@@ -130,7 +135,7 @@
 
 ## 当前 Pi 行为
 
-Pi 的实际行为以固定版本（0.84.2）的源码为准；课程叙述应链接到 [Pi 源码映射](pi-source-map.md)，而不是把示例 Python 当作 Pi 的生产实现。
+Pi 的实际行为以固定版本（0.85.1）的源码为准；课程叙述应链接到 [Pi 源码映射](pi-source-map.md)，而不是把示例 Python 当作 Pi 的生产实现。
 
 ## Python 实验
 
@@ -142,7 +147,7 @@ python3 -m learn_pi_lab
 
 ## 配套资料
 
-- [Pi 源码映射](pi-source-map.md) —— 固定基线、源码入口、已校正的易错点
+- [Pi 源码映射](pi-source-map.md) —— 固定基线、源码入口、常见误解与基线事实
 - [术语表](glossary.md) —— 关键术语定义
 - [Tau](https://github.com/huggingface/tau) —— Pi 的 Python 对照实现（tau_agent / tau_ai / tau_coding）
 

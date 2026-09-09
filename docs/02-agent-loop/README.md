@@ -30,8 +30,6 @@
 
 ## 二、两个必须分清的概念：Trace 与 Turn
 
-## 二、两个必须分清的概念：Trace 与 Turn
-
 - **Trace**：从 `agent_start` 到 `agent_end` 的一次完整运行，包含多个 Turn。
 - **Turn**：**一次模型调用 + 该调用触发的一批工具执行**，由一对 `turn_start` / `turn_end` 包裹。
 
@@ -88,6 +86,24 @@ Pi 还暴露了三个钩子让产品层**不改循环也能定制行为**：`pre
 
 - 循环由 pi-agent-core 提供，Provider 无关；继续/终止由 stopReason、工具批 terminate、pending/follow-up 与钩子共同决定。
 - 工具执行默认并行，可全局或按工具配置为顺序；单批中全部工具请求终止才提前结束。
+- steering 消息在两处被吸收：外层循环开始时，以及工具准备等长耗时操作结束后——这样用户在等待期间输入的话不会丢。
+- follow-up 消息在外层循环末尾读取：Agent 本轮本可停止，`getFollowUpMessages` 返回非空则带新消息继续。
+- `stopReason = length` 且消息带工具调用时，整批调用被 `failToolCallsFromTruncatedMessage` 标记失败并回填错误结果，而不是执行。
+
+### 源码证据表
+
+以下位置锚定基线 Pi 0.85.1 @ `d981de1229ef899957bbe968bc8dcda02a21f477`（`packages/agent/src/agent-loop.ts`）。
+
+| 教学结论 | 符号 / 位置 | 说明 |
+|---|---|---|
+| 循环入口与事件驱动 | `agentLoop` / `runAgentLoop`（32 / 96） | `AgentEventSink` 是唯一出口（26） |
+| 外层循环读 steering | `runLoop`（167） | "user may have typed while waiting" |
+| 准备阶段后再取一次 steering | `runLoop`（191） | compaction 等长操作不吞用户输入 |
+| `error` / `aborted` 立即终止 | `runLoop`（215） | |
+| `length` 时全部失败工具调用 | `failToolCallsFromTruncatedMessage`（379），调用点 231 | "every tool call may carry truncated arguments" |
+| 内层是否继续 | `hasMoreToolCalls = !batch.terminate`（235） | 全部 terminate 才提前结束 |
+| follow-up 在外层末尾 | `runLoop`（261–264） | `getFollowUpMessages` 返回非空则继续 |
+| 并行/串行调度 | `executeToolCalls`（409–421） | 任一工具 `executionMode: "sequential"` 即整批串行 |
 
 ## 在 Pi 里怎么操作
 
@@ -126,6 +142,25 @@ for turn in range(1, max_turns + 1):
 python3 -m learn_pi_lab lab agent-loop   # 脚本化 trace：终止/未知工具/异常工具
 python3 -m learn_pi_lab lab mini-agent
 ```
+
+## 失败与边界实验
+
+`lab agent-loop` 的脚本化 trace 覆盖三条路径，每条都回答"谁发现错误、错误是否回填、是否产生副作用"：
+
+| 场景 | 谁发现 | 回填给模型？ | 副作用 |
+|---|---|---|---|
+| 正常终止（`stop`） | 模型（stopReason） | — | 无 |
+| 未知工具 | harness（注册表查不到） | 是，错误结果回填 | 无（未执行任何东西） |
+| 工具执行抛异常 | harness（executor 包裹） | 是，`is_error=True` | 可能已产生部分副作用 |
+| `length` + 工具调用 | harness（参数完整性不可信） | 是，整批失败回填 | 无（宁可全失败） |
+
+关键观察：**错误回填让模型有机会自救**（换一个工具、换参数重试），而直接终止会让一次可恢复的失败毁掉整个任务。`length` 的处理是反方向的取舍——宁可毁掉这一批调用，也不执行可能被截断参数的危险操作。
+
+```sh
+python3 -m unittest tests.test_01_agent_loop -v
+```
+
+> 这一模块的核心代码在[核心代码导览 · Agent Loop 循环骨架](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

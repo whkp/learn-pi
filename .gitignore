@@ -11,7 +11,7 @@ Thumbs.db
 
 # Node
 node_modules/
-package-lock.json
+# 注意：package-lock.json 必须提交，CI 的 `npm ci` 与依赖缓存都依赖它
 
 # Pi
 .pi/
@@ -23,6 +23,8 @@ package-lock.json
 __pycache__/
 *.py[cod]
 
-# mdBook site build artifacts
-src/
-book/
+# 静态站点产物
+dist/
+
+# WorkBuddy 会话数据
+.workbuddy/

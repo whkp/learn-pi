@@ -54,10 +54,20 @@ def find_broken_links(root: Path | str) -> list[str]:
     return errors
 
 
+IGNORED_DIRS = frozenset(
+    {".git", ".workbuddy", "node_modules", "dist", "src", "book", "__pycache__", ".venv"}
+)
+
+
 def _markdown_files(root: Path) -> list[Path]:
     if not root.is_dir():
         return []
-    return [path for path in root.rglob("*.md") if ".git" not in path.parts and path.is_file()]
+    return [
+        path
+        for path in root.rglob("*.md")
+        if path.is_file()
+        and not IGNORED_DIRS.intersection(path.parts)
+    ]
 
 
 def _link_targets(contents: str) -> list[str]:

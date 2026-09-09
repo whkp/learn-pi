@@ -1,0 +1,14 @@
+{
+  "name": "learn-pi",
+  "private": true,
+  "description": "Learn Pi 教程站点：读取 docs/ 生成静态网站（无框架、零运行时依赖）",
+  "type": "module",
+  "scripts": {
+    "site:build": "node site/build.mjs",
+    "site:preview": "node site/build.mjs --serve"
+  },
+  "devDependencies": {
+    "highlight.js": "^11.12.0",
+    "markdown-it": "^14.3.1"
+  }
+}

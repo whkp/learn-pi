@@ -6,7 +6,7 @@
 
 - 理解 Pi 的分层：模型无关的核心 / 产品环境 / 前端，三者通过事件契约解耦。
 - 理解"高级能力即工具"这一设计取舍：为什么核心保持小而可扩展。
-- 认识 Pi 0.84.2 的包拓扑与依赖方向，并能在任何 Agent 产品中认出这些层。
+- 认识 Pi 0.85.1 的包拓扑与依赖方向，并能在任何 Agent 产品中认出这些层。
 
 ## 一、问题：Agent 产品由什么组成
 
@@ -24,7 +24,37 @@
 | 聊了一下午也没失忆 | harness——压缩是 harness 触发的 |
 | 它"学会"了新技能 | harness——skill 是 harness 加载的 |
 
-模型提供的是什么？语言、推理，以及最关键的一件事：**决定下一步调用哪个工具**。这已经足够惊人——但仅此而已。**智能来自模型，能力边界全来自 harness**。这就是全书的第一句话：**agent = LLM + tool use**。
+模型提供的是什么？语言、推理，以及最关键的一件事：**决定下一步调用哪个工具**。这已经足够惊人——但仅此而已。**智能来自模型，能力边界全来自 harness**。于是就有了全书的第一句话：
+
+> **agent = LLM + tool use**
+
+先别急着挑这句口号的刺。它描述的是**核心循环的最小闭环**——让循环转起来，少一个零件都不行，所以只保留了两样东西。至于你在经典组件图里见过的 Planning 和 Memory，它们没有被扔掉，只是换了住处。住哪了？往下看。
+
+### 常见疑问：Planning 和 Memory 呢？
+
+翻开任何一本 Agent 教材，组件图几乎都长一个样：**Agent = LLM + Planning + Memory + Tools**。对照上面的口号，Planning 和 Memory 两个组件凭空消失了——是 Pi 没做，还是这句口号偷了懒？
+
+都不是。两个框架回答的是不同的问题：组件图回答"**一个 Agent 系统由什么组成**"，这个口号回答"**让循环转起来，最少的机制是什么**"。前者是能力清单，后者是引擎剖视图。消失的两个组件，在 Pi 里各有承担者：
+
+| 经典组件 | Pi 里的承担者 | 为什么不进核心循环 |
+|---|---|---|
+| LLM | 模型调用（Provider 层，[08 章](../08-providers-and-models/README.md)） | — |
+| Tools | 工具系统（[03 章](../03-tools/README.md)） | — |
+| Planning | **模型在循环内自主规划**：每一轮"决定调用哪个工具"就是一次规划动作 | Pi 刻意不内置 planner——任务分解是模型的推理能力；把流程硬编码进框架反而退化成 Workflow（本章开头的三种用法对照） |
+| Memory | **短期**：harness 维护的消息数组，每轮重发（[04 章](../04-messages-and-memory/README.md)）；**长期**：会话文件与上下文文件，压缩控制预算（[05](../05-sessions/README.md)、[07](../07-context-and-compaction/README.md)、[04b](../04b-system-prompt/README.md) 章） | 核心只保留"消息数组"这一个最小机制；持久化、压缩、注入是产品层职责，可以各自独立演进 |
+
+所以完整的表述是两层：
+
+```text
+最小闭环（核心循环）：   agent = LLM + tool use
+完整系统（产品 harness）：+ 消息与记忆 + 上下文管理 + 会话 + 权限 + 事件 ...
+```
+
+Pi 的架构选择由此说得通：**Planning 交给模型**（它本来就擅长，硬编码流程只会限制它），**Memory 拆成消息数组、会话、压缩三件机制分别讲清**（[04](../04-messages-and-memory/README.md)、[05](../05-sessions/README.md)、[07](../07-context-and-compaction/README.md) 章）——而不是提供一个名为 memory 的黑盒组件。这也是本课程的立场：凡是被包装成"组件"的能力，都要能拆到机制层看懂。
+
+**一句话总结**：口号没有漏掉 Planning 和 Memory——Planning 是模型在循环里每一步"选哪个工具"时顺便完成的，Memory 则被拆成消息数组、会话、压缩三件机制，由产品层各自承担。
+
+组件的问题说清了，回到主线。
 
 ## 二、Pi 的三层架构
 
@@ -68,8 +98,33 @@ Pi 刻意不内置子代理、计划模式、权限弹窗、MCP。为什么？�
 
 ## 当前 Pi 行为
 
-- 固定基线：Pi 0.84.2 @ `914cf1472e715297caa30db4b9535d534a9eb718`。
+- 固定基线：Pi 0.85.1 @ `d981de1229ef899957bbe968bc8dcda02a21f477`。
 - 四种运行模式（TUI / Print / JSON / RPC）共享同一个 Agent 核心，区别只在前端层。
+- 核心包仍为 `ai`、`agent`、`tui`、`coding-agent` 四个；实验性包 0.85 新增 `chord`（插件加载/服务声明/对称 RPC/状态复制的应用中立基础，官方标注尚非稳定 API）。
+- 分层可从源码目录直接验证：`packages/agent/src/agent-loop.ts` 不 import 任何 Provider 与 UI；`packages/coding-agent/src/` 才出现会话、设置、扩展。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 循环不依赖 Provider 与 UI | `packages/agent/src/agent-loop.ts` | 整个文件只消费 `config` 抽象 |
+| 事件类型是显式判别联合 | `packages/agent/src/types.ts`（433–446） | `agent_start` 到 `tool_execution_end` 全部列出 |
+| 包拓扑 | `packages/` 目录 | 0.85.1 实测：ai/agent/tui/coding-agent + client/protocol/server/evals/telemetry/session-backends/chord |
+| 四种运行模式 | `packages/coding-agent/docs/sdk.md`、`rpc.md`、`json.md` | 同一核心、不同前端 |
+
+## 失败与边界实验
+
+分层边界违反时会发生什么？三个思想实验，都可以在源码里验证"为什么做不到"：
+
+1. **让核心直接调用模型 API**：`agent-loop.ts` 没有任何 import 指向 Provider 实现——它只接受调用方注入的流式函数。要换模型，改的是调用方，不是循环。
+2. **让前端直接改消息数组**：前端拿到的是事件流和消息副本，没有对核心内部状态的引用。TUI 想高亮某条消息，只能订阅 `message_update`，不能"伸手进去改"。
+3. **把权限检查塞进循环里**：循环只在 `executeToolCalls` 处调用工具，不知道权限的存在。硬闸门属于工具的 executor 层——这正是为什么权限策略可以每个项目不同，而循环代码不变。
+
+第三个实验是分层最有力的证据：**边界画在包之间，而不是画在 if 语句里**。
+
+```sh
+python3 -m unittest tests.test_13_mini_agent -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -90,6 +145,8 @@ Tau（Pi 的 Python 对照实现）用三个包实现同一个分层：`tau_ai`�
 python3 -m learn_pi_lab lab mini-agent
 ```
 
+> 这一模块的核心代码在[核心代码导览 · 架构分层](../code-tour.md)有逐段解读。
+
 ## 验证方式
 
 ```sh
@@ -104,7 +161,7 @@ python3 scripts/check_course_contract.py
 
 ## 回顾
 
-- **agent = LLM + tool use**：智能来自模型，能力边界全来自 harness。
+- **agent = LLM + tool use（最小闭环）**：智能来自模型，能力边界全来自 harness；Planning 由模型在循环内承担，Memory 拆成消息数组、会话与压缩，都不是核心循环的黑盒组件。
 - **三层架构**：模型无关的核心 / 产品环境 / 前端，事件契约是粘合剂。
 - **高级能力即工具**：核心保持小，能力按需生长。
 

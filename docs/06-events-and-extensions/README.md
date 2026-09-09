@@ -54,6 +54,32 @@ Pi 有两套并行的监听机制，共享同一批事件源，但"**Agent 等�
 
 - 扩展事件覆盖：会话生命周期（`session_start`/`session_shutdown`）、上下文注入（`context`）、Provider 请求改写（`before_provider_request` 等）、Agent 循环观察、用户操作观察（`model_select`/`user_bash`）。
 - 事件名与 payload 类型以固定基线的 `extensions.md` 与 `src/core/extensions/types.ts` 为准，不要从旧示例复制。
+- Agent 事件（核心发给前端的流）与扩展事件（扩展注册的钩子）是**两套清单**：前者只读观察，后者可返回值改变行为。`agent_start`…`tool_execution_end` 属于前者，`before_agent_start` 属于后者。
+- `before_agent_start` 返回 `{ systemPrompt }` 可替换本轮系统提示词——这是改写提示词的通用手段，也是 [04b 章](../04b-system-prompt/README.md) 里"关掉 cwd 那一行"的唯一途径。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| Agent 事件判别联合 | `packages/agent/src/types.ts`（433–446） | `agent_start` 到 `tool_execution_end` |
+| 事件消费入口 | `session.subscribe` | 只读，无返回值 |
+| 扩展钩子清单 | `packages/coding-agent/src/core/extensions/types.ts` | 返回值即介入手段 |
+| 提示词改写钩子 | `before_agent_start` | 返回 `{ systemPrompt }` 链式覆盖 |
+| 扩展工厂签名 | `ExtensionFactory` | `(pi) => void`，函数体内 `pi.on` 注册 |
+| 关闭事件 | `session_shutdown` | 没有 `settings_change`（基线核实） |
+
+## 失败与边界实验
+
+事件系统的三个经典故障，`tests/test_07_extension_events` 各有对应用例：
+
+1. **订阅者抛异常。** 一个前端崩溃不能拖垮 Agent：事件总线对每个 handler 的异常做隔离，失败只属于那个订阅者。教学模型的 `LessonEventBus` 逐个调用订阅者并捕获异常——顺序继续，不中断广播。
+2. **钩子返回值被忽略。** `before_agent_start` 返回 `{ systemPrompt }` 是**约定**：返回别的结构等于没改。类型系统在这里是唯一的防线，运行时不会报错——这也是"事件即契约"的代价：契约靠类型与文档维持，不靠运行时强校验。
+3. **未知事件类型。** 新版本加了新事件，旧消费者必须能忽略它而不是崩溃。判别联合 + `default` 分支是 TypeScript 侧的纪律；JSON 输出侧则要求消费者按 `type` 字段分发并对未知值宽容。
+
+```sh
+python3 -m learn_pi_lab lab events
+python3 -m unittest tests.test_07_extension_events -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -88,6 +114,8 @@ outcomes = bus.emit("turn", {"lesson": "events"})    # 每个 handler 一个 Eve
 python3 -m learn_pi_lab lab events
 ```
 
+> 这一模块的核心代码在[核心代码导览 · 事件总线](../code-tour.md)有逐段解读。
+
 ## 验证方式
 
 ```sh
@@ -96,7 +124,7 @@ python3 -m unittest tests.test_07_extension_events -v
 
 ## 边界与安全
 
-- 事件名、payload、返回约定以固定基线（0.84.2）为准，不要从旧 README 复制。
+- 事件名、payload、返回约定以固定基线（0.85.1）为准，不要从旧 README 复制。
 - 扩展应验证所有外部输入、限制可执行操作，把异常变成明确的用户反馈或日志。
 - 社区项目随 Pi 版本演进；本课程的 Python 实验不绑定、不依赖任何 Pi 扩展。
 

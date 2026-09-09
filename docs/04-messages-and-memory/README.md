@@ -51,6 +51,30 @@
 
 - 消息是 append-only 的：循环只追加，不修改历史（异常修复除外）。
 - 工具结果通过 `toolCallId` 配对；持久化时消息序列化进 JSONL（见 [05 章](../05-sessions/README.md)）。
+- 消息类型在类型层就是判别联合：`AgentToolCall` 直接从 assistant 内容里 `Extract` 出来（`types.ts` 53 行），而不是单独声明一个平行类型。
+- 事件流按消息生命周期发：`message_start` / `message_update`（流式 delta）/ `message_end`（`types.ts` 439–442）。
+- 截断保护在消息层兜底：`length` 截断的整批工具调用会被失败回填，保证 toolCall/toolResult 成对（见 [02 章](../02-agent-loop/README.md)）。
+
+### 源码证据表
+
+| 教学结论 | Pi 路径 / 符号 | 说明 |
+|---|---|---|
+| 工具调用是内容块的一种 | `packages/agent/src/types.ts` `AgentToolCall`（53） | `Extract<AssistantMessage["content"][number], {type:"toolCall"}>` |
+| toolResult 配对字段 | `packages/agent/src/types.ts`（397） | `toolCallId` |
+| 消息事件三段式 | `packages/agent/src/types.ts`（439–442） | start / update / end |
+| 追加而非改写 | `packages/agent/src/agent-loop.ts` `runLoop` | `messages.push(result)` |
+
+## 失败与边界实验
+
+消息数组是循环的命脉，两类经典失败都发生在"配对"上：
+
+1. **只回填一半。** 模型发起 3 个工具调用，executor 抛异常后只回填了 2 个结果——下一轮请求会被 API 拒绝（toolCall 无对应 toolResult）。修法：循环层保证"每个 toolCall 必有 toolResult"，异常转成 `is_error=True` 的结果回填。
+2. **`toolCallId` 配错对。** 结果回填给了错误的调用 ID，模型会把 B 工具的结果当成 A 的。串行时不易发现，并行执行时是真实风险——这也是并行调度要求工具作者声明 `executionMode` 的原因之一。
+3. **截断消息直接入库。** `length` 截断的 assistant 消息若原样保存，其残缺 toolCall 会在下一次会话恢复时引爆。Pi 的处理是在入列前就把这批调用失败化（`failToolCallsFromTruncatedMessage`），保证任何进入历史的消息都是成对完整的。
+
+```sh
+python3 -m unittest tests.test_13_mini_agent -v
+```
 
 ## 在 Pi 里怎么操作
 
@@ -76,6 +100,8 @@ JSONL 持久化（`dump_messages` / `load_messages`）按 `role` 重建消息，
 ```sh
 python3 -m learn_pi_lab lab mini-agent   # 输出含 loaded_roles：JSONL 往返后的角色序列
 ```
+
+> 这一模块的核心代码在[核心代码导览 · 消息回填](../code-tour.md)有逐段解读。
 
 ## 验证方式
 

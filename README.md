@@ -6,7 +6,7 @@
 
 先立一个判断：**智能来自模型，能力边界全来自 harness（包住模型的那层程序）。**
 
-一个统一定义：**agent = LLM + tool use**。模型负责语言、推理，以及决定下一步调用哪个工具；除此之外的一切——消息维护、工具注册与执行、权限、上下文、会话——都是 harness 的职责。因此，Pi 核心不内置子代理、计划模式、MCP 等高级能力：它们本质上都是一个工具，可以按需扩展，而不是塞进核心。
+一个最小闭环定义：**agent = LLM + tool use**（它是核心循环的最小机制集，不是能力全集——Planning 由模型在循环内自主承担，Memory 拆成消息数组、会话与压缩三件机制）。模型负责语言、推理，以及决定下一步调用哪个工具；除此之外的一切——消息维护、工具注册与执行、权限、上下文、会话——都是 harness 的职责。因此，Pi 核心不内置子代理、计划模式、MCP 等高级能力：它们本质上都是一个工具，可以按需扩展，而不是塞进核心。
 
 本课程研究的正是 harness 这一侧——以 Pi 为蓝本，每一章围绕一个大主题，讲清“是什么 / 怎么做 / 为什么”，以少量核心代码（mini_agent / labs / Tau）配合文本解读，重点介绍 Pi 的核心设计。
 
@@ -48,7 +48,7 @@
 - **不是 Pi SDK、绑定或移植版**：Pi 是 TypeScript 项目，本仓库的 Python 仅是依赖标准库的教学模型。
 - **不访问网络、不调用模型、不执行学习者提供的 shell 命令**：所有实验离线、确定、可复现。
 - **不覆盖 Pi 的生产细节**：认证、OAuth、权限弹窗、扩展发布流程等，请回到固定基线源码和官方文档（pi.dev）核对。
-- **不把教学模型伪装成当前 API**：任何 API 细节以 [Pi 源码映射](docs/pi-source-map.md) 固定基线（0.84.2 @ `914cf1472e715297caa30db4b9535d534a9eb718`）为准。
+- **不把教学模型伪装成当前 API**：任何 API 细节以 [Pi 源码映射](docs/pi-source-map.md) 固定基线（0.85.1 @ `d981de1229ef899957bbe968bc8dcda02a21f477`）为准。
 
 想看 Pi 的成品 Python 对照实现？请读 [Tau](https://github.com/huggingface/tau)（tau_agent / tau_ai / tau_coding），本课程的 [mini-agent 实验](learn_pi_lab/labs/mini_agent.py) 就是它的最小化镜像。
 
@@ -92,6 +92,7 @@ python3 -m learn_pi_lab lab mini-agent
 | [02](docs/02-agent-loop/README.md) | Agent Loop | 模型如何驱动循环：Trace/Turn、stopReason |
 | [03](docs/03-tools/README.md) | 工具系统 | 工具如何被声明、注册与约束 |
 | [04](docs/04-messages-and-memory/README.md) | 消息与记忆 | 对话历史如何组织与传递 |
+| [04b](docs/04b-system-prompt/README.md) | 系统提示词 | 五段拼装、customPrompt 与默认路径、三级回退链 |
 | [05](docs/05-sessions/README.md) | 会话管理 | 对话如何存储、恢复与分叉 |
 | [06](docs/06-events-and-extensions/README.md) | 事件驱动与扩展 | 事件契约、subscribe vs pi.on、社区扩展 |
 | [07](docs/07-context-and-compaction/README.md) | 上下文压缩 | 窗口即预算、切割点、成对不拆 |
@@ -114,6 +115,7 @@ python3 -m learn_pi_lab lab mini-agent
 | 压缩边界 | learn_pi_lab/labs/compaction.py | python3 -m learn_pi_lab lab compaction |
 | 资源发现 | learn_pi_lab/labs/resources.py | 见模块测试 |
 | 事件派发 | learn_pi_lab/labs/extension_events.py | python3 -m learn_pi_lab lab events |
+| 系统提示词拼装 | learn_pi_lab/labs/system_prompt.py | python3 -m learn_pi_lab lab system-prompt |
 | Provider 目录 | learn_pi_lab/labs/provider_registry.py | python3 -m learn_pi_lab lab providers |
 | 重试模型 | learn_pi_lab/labs/reliability.py | python3 -m learn_pi_lab lab reliability |
 | JSONL RPC | learn_pi_lab/labs/rpc_jsonl.py | python3 -m learn_pi_lab lab rpc-jsonl |
@@ -139,7 +141,7 @@ python3 -m learn_pi_lab lab mini-agent
 
 ```text
 learn-pi/
-├── docs/                  # 11 章课程资料（中文）
+├── docs/                  # 12 章课程资料（中文）
 │   ├── 00-course-map.md   # 课程地图与主章节清单
 │   ├── 01-architecture/   # 架构总览（Pi 分层 + 通用骨架）
 │   ├── 02-agent-loop/     # 每章一个大主题
@@ -148,11 +150,12 @@ learn-pi/
 │   ├── pi-source-map.md   # Pi 固定基线映射
 │   └── glossary.md        # 术语表
 ├── learn_pi_lab/          # Python 教学实验包（仅标准库）
-│   └── labs/              # 11 个实验模块
+│   └── labs/              # 12 个实验模块
 ├── examples/harness/      # 构建路线：裸 API → 完整 Harness（12 步，B01-B06 完成）
 ├── projects/              # 4 个离线实战项目
-├── scripts/               # 课程契约与链接检查、站点构建
-└── tests/                 # 108 个单元测试
+├── site/                  # 静态站点生成器（无框架，零运行时依赖）
+├── scripts/               # 课程契约与链接检查、一键检查与构建
+└── tests/                 # 131 个单元测试
 ```
 
 ## 快速开始
@@ -177,11 +180,19 @@ python3 -m unittest discover -s tests -v
 一键检查 + 站点构建（`docs/` 是单一事实源，发布前必须运行）：
 
 ```sh
-./scripts/build_and_check.sh                  # 契约 + 链接 + 测试 + mdBook 构建
+./scripts/build_and_check.sh                  # 契约 + 链接 + 测试 + 站点构建
 ./scripts/build_and_check.sh --skip-build     # 只检查，不构建站点
 ```
 
-单独执行：
+单独构建站点（`docs/` → `dist/`）：
+
+```sh
+npm ci                 # 首次安装：只需要 markdown-it 与 highlight.js
+npm run site:build     # 构建到 dist/
+npm run site:preview   # 构建并启动本地预览（http://localhost:4173）
+```
+
+单独执行检查：
 
 ```sh
 python3 -m unittest discover -s tests -v
