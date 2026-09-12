@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Learn Pi banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#818cf8"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="320" rx="24" fill="url(#bg)"/>
+
+  <!-- left: title -->
+  <text x="72" y="120" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="64" font-weight="700" fill="#ffffff">Learn Pi</text>
+  <text x="72" y="172" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="28" fill="#c7d2fe">读懂编码智能体的每一层机制</text>
+  <rect x="74" y="196" width="380" height="4" rx="2" fill="url(#accent)"/>
+  <text x="72" y="248" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" fill="#94a3b8">12 章课程 · 12 个离线实验 · 131 个单元测试 · 4 个实战项目</text>
+
+  <!-- right: agent loop motif -->
+  <g font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" font-weight="600">
+    <rect x="860" y="64" width="140" height="54" rx="12" fill="#312e81" stroke="#818cf8" stroke-width="1.5"/>
+    <text x="930" y="98" text-anchor="middle" fill="#ffffff">LLM</text>
+
+    <rect x="990" y="212" width="130" height="54" rx="12" fill="#1e3a5f" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1055" y="246" text-anchor="middle" fill="#ffffff">Tools</text>
+
+    <rect x="700" y="212" width="170" height="54" rx="12" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+    <text x="785" y="246" text-anchor="middle" fill="#ffffff">messages[]</text>
+  </g>
+  <g font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#94a3b8">
+    <path d="M 985 118 L 1046 208" stroke="#818cf8" stroke-width="2" marker-end="url(#arr)" fill="none"/>
+    <text x="1042" y="168">toolUse?</text>
+    <path d="M 988 239 L 874 239" stroke="#34d399" stroke-width="2" marker-end="url(#arr)" fill="none"/>
+    <text x="884" y="230">结果回填</text>
+    <path d="M 768 210 L 872 122" stroke="#818cf8" stroke-width="2" marker-end="url(#arr)" fill="none"/>
+    <text x="742" y="162">重新喂给模型</text>
+  </g>
+</svg>
